@@ -1,0 +1,18 @@
+name = "gamremit-api"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+# These are overridden by your Cloudflare dashboard secrets
+# Set them via: wrangler secret put JWT_SECRET etc.
+# Or add them in Cloudflare Dashboard → Workers → Settings → Variables
+
+# ── For local dev only (wrangler dev) ──
+# Copy this file to .dev.vars and fill in real values:
+#   UPSTASH_REDIS_REST_URL = "https://loving-gnu-104251.upstash.io"
+#   UPSTASH_REDIS_REST_TOKEN = "your-token-here"
+#   JWT_SECRET = "
+#   ADMIN_PASSWORD = "
+
+pages_build_output_dir = "./frontend"

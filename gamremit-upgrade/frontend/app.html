@@ -1,0 +1,2249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>GamRemit — My Dashboard</title>
+  <link rel="icon" type="image/png" href="logos/gamremit-logo.png"/>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#07090F;--s1:#0D1220;--s2:#131A2E;--s3:#1A2340;--sidebar:#080C18;
+      --border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.11);
+      --green:#00D48C;--blue:#1246F5;--blue2:#2A5AFF;--gold:#F0A033;--red:#FF4D6A;
+      --muted:rgba(255,255,255,.45);--dimmed:rgba(255,255,255,.2);
+      --font:'Sora',sans-serif;--mono:'Space Mono',monospace;
+    }
+    html{scroll-behavior:smooth}
+    body{font-family:var(--font);background:var(--bg);color:#fff;display:flex;min-height:100vh}
+    .sidebar{width:240px;flex-shrink:0;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;transition:.3s}
+    .sb-logo{padding:20px 16px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;text-decoration:none}
+    .sb-logo img{height:36px;width:auto}
+    .sb-nav{flex:1;padding:12px 8px;overflow-y:auto}
+    .sb-sec{font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--dimmed);padding:0 10px;margin:14px 0 5px}
+    .sb-link{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;font-size:.83rem;font-weight:600;color:var(--muted);text-decoration:none;transition:.2s;cursor:pointer;border:none;background:none;width:100%;font-family:var(--font)}
+    .sb-link:hover{color:#fff;background:rgba(255,255,255,.06)}
+    .sb-link.active{color:#fff;background:rgba(18,70,245,.18);border:1px solid rgba(18,70,245,.25)}
+    .sb-link .si{font-size:.95rem;width:20px;text-align:center;flex-shrink:0}
+    .status-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;font-size:.72rem;font-weight:700;margin:10px 10px 0}
+    .sc-pending{background:rgba(240,160,51,.1);border:1px solid rgba(240,160,51,.2);color:var(--gold)}
+    .sc-active{background:rgba(0,212,140,.09);border:1px solid rgba(0,212,140,.2);color:var(--green)}
+    .sc-blocked{background:rgba(255,77,106,.09);border:1px solid rgba(255,77,106,.2);color:var(--red)}
+    .sb-bottom{padding:12px 8px;border-top:1px solid var(--border)}
+    .user-chip{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--border);cursor:pointer}
+    .user-av{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--blue),#8B5CF6);display:flex;align-items:center;justify-content:center;font-size:.82rem;font-weight:800;flex-shrink:0}
+    .user-name{font-size:.8rem;font-weight:700}
+    .user-email{font-size:.6rem;color:var(--muted)}
+    .main{flex:1;margin-left:240px;display:flex;flex-direction:column;min-height:100vh}
+    .topbar{padding:0 24px;height:62px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:rgba(7,9,15,.95);backdrop-filter:blur(20px);position:sticky;top:0;z-index:50}
+    .tb-title{font-size:.95rem;font-weight:800}
+    .tb-sub{font-size:.72rem;color:var(--muted);margin-top:1px}
+    .tb-right{display:flex;align-items:center;gap:8px}
+    .notif-btn{position:relative;width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1rem;transition:.2s}
+    .notif-btn:hover{background:rgba(255,255,255,.09)}
+    .notif-count{position:absolute;top:-4px;right:-4px;width:16px;height:16px;border-radius:50%;background:var(--red);font-size:.58rem;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center;display:none}
+    .menu-btn{display:none;background:none;border:none;color:#fff;cursor:pointer;padding:5px}
+    .content{padding:22px 24px;flex:1}
+    .panel{display:none}.panel.active{display:block}
+    /* CARDS */
+    .card{background:var(--s1);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+    .card-hdr{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+    .card-title{font-size:.88rem;font-weight:800}
+    /* STATS */
+    .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+    .stat{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:16px;transition:.2s}
+    .stat:hover{border-color:var(--border2);transform:translateY(-2px)}
+    .stat-icon{font-size:1.2rem;margin-bottom:8px}
+    .stat-label{font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px}
+    .stat-val{font-family:var(--mono);font-size:1.3rem;font-weight:700}
+    /* PENDING BANNER */
+    .pending-banner{background:rgba(240,160,51,.07);border:1px solid rgba(240,160,51,.2);border-radius:14px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:14px}
+    .pb-icon{font-size:1.8rem;flex-shrink:0}
+    .pb-title{font-size:.88rem;font-weight:700;margin-bottom:3px}
+    .pb-sub{font-size:.78rem;color:var(--muted);line-height:1.5}
+    /* SEND FORM */
+    .send-grid{display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start}
+    .field{margin-bottom:12px}
+    .field label{display:block;font-size:.63rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--dimmed);margin-bottom:5px}
+    .req{color:var(--gold)}
+    .field input,.field select,.field textarea{width:100%;padding:11px 13px;background:rgba(255,255,255,.06);border:1.5px solid var(--border2);border-radius:10px;font-family:var(--font);font-size:.88rem;color:#fff;outline:none;transition:.2s;-webkit-appearance:none}
+    .field input::placeholder,.field textarea::placeholder{color:var(--dimmed)}
+    .field input:focus,.field select:focus{border-color:var(--blue);background:rgba(18,70,245,.05)}
+    .field select option{background:var(--s2)}
+    .f2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .amt-wrap{display:flex}
+    .amt-wrap input{border-radius:10px 0 0 10px;border-right:none}
+    .amt-wrap select{min-width:90px;border-radius:0 10px 10px 0;border-left:none;background:rgba(18,70,245,.2);border-color:rgba(18,70,245,.35);font-weight:700;font-size:.8rem}
+    .ferr{font-size:.68rem;color:var(--red);margin-top:3px}
+    /* PRICING BOX */
+    .price-box{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:12px;padding:13px 15px;margin-bottom:14px}
+    .pb-loading{font-size:.8rem;color:var(--muted);text-align:center;padding:8px}
+    .pb-main{display:none}
+    .pb-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.8rem}
+    .pb-row:last-child{border-bottom:none}
+    .pbk{color:var(--muted);font-size:.75rem}.pbv{font-weight:700;font-family:var(--mono)}
+    .pbv.g{color:var(--green)}.pbv.b{color:#8ab4ff}.pbv.go{color:var(--gold)}
+    .pb-locked{margin-top:8px;padding:6px 11px;background:rgba(0,212,140,.07);border:1px solid rgba(0,212,140,.18);border-radius:7px;font-size:.68rem;color:var(--green);display:flex;align-items:center;gap:6px}
+    /* UPLOAD */
+    .upload-zone{border:2px dashed rgba(255,255,255,.12);border-radius:11px;padding:20px;text-align:center;cursor:pointer;position:relative;transition:.2s}
+    .upload-zone:hover,.upload-zone.has{border-color:var(--green);background:rgba(0,212,140,.04)}
+    .upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2}
+    /* STEP BAR */
+    .step-bar{display:flex;align-items:center;padding:14px 20px;background:rgba(255,255,255,.02);border-bottom:1px solid var(--border)}
+    .sbi{display:flex;align-items:center;gap:6px;font-size:.74rem;font-weight:600;color:var(--muted);flex:1}
+    .sbi.active{color:#fff}
+    .sbi.done{color:var(--green)}
+    .sbi-circle{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:800;flex-shrink:0}
+    .sbi.active .sbi-circle{background:var(--blue)}
+    .sbi.done .sbi-circle{background:var(--green)}
+    .sbi-line{flex:1;height:1px;background:var(--border);margin:0 4px}
+    .sbi.done .sbi-line{background:var(--green);opacity:.4}
+    .fb{padding:20px}
+    .sec-lbl{font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--dimmed);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+    /* BUTTONS */
+    .btn-primary{padding:12px 20px;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border:none;border-radius:10px;font-family:var(--font);font-size:.88rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;box-shadow:0 4px 18px rgba(18,70,245,.35);transition:.2s}
+    .btn-primary:hover:not(:disabled){transform:translateY(-1px)}
+    .btn-primary:disabled{opacity:.45;cursor:not-allowed}
+    .btn-outline{padding:12px 18px;background:rgba(255,255,255,.05);border:1px solid var(--border2);color:rgba(255,255,255,.6);border-radius:10px;font-family:var(--font);font-size:.85rem;font-weight:600;cursor:pointer;transition:.2s}
+    .btn-outline:hover{background:rgba(255,255,255,.09)}
+    .btn-full{width:100%}
+    .spin{width:15px;height:15px;border:2px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    /* TX TABLE */
+    .tx-table{width:100%;border-collapse:collapse}
+    .tx-table th{padding:9px 16px;font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);border-bottom:1px solid var(--border);text-align:left}
+    .tx-table td{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.03);font-size:.8rem;vertical-align:middle}
+    .tx-table tr:last-child td{border-bottom:none}
+    .tx-table tr:hover td{background:rgba(255,255,255,.02)}
+    .ref-mono{font-family:var(--mono);font-size:.72rem;color:var(--muted)}
+    .amount-val{font-family:var(--mono);font-weight:700}
+    .s-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:100px;font-size:.63rem;font-weight:800;text-transform:uppercase}
+    .s-pending{background:rgba(240,160,51,.1);color:var(--gold);border:1px solid rgba(240,160,51,.2)}
+    .s-processing{background:rgba(18,70,245,.1);color:#8ab4ff;border:1px solid rgba(18,70,245,.2)}
+    .s-completed{background:rgba(0,212,140,.1);color:var(--green);border:1px solid rgba(0,212,140,.2)}
+    .s-rejected{background:rgba(255,77,106,.1);color:#ff7090;border:1px solid rgba(255,77,106,.2)}
+    /* RATES */
+    .rates-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+    .rate-card{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:16px;transition:.2s}
+    .rate-card:hover{border-color:var(--border2);transform:translateY(-2px)}
+    .rate-pair{font-size:.8rem;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+    .rate-val{font-family:var(--mono);font-size:1.2rem;font-weight:700;color:var(--gold)}
+    .rate-fee{font-size:.68rem;color:var(--muted);margin-top:3px}
+    /* TRACK */
+    .track-form{display:flex;gap:10px;margin-bottom:20px}
+    .track-inp{flex:1;padding:12px 14px;background:rgba(255,255,255,.06);border:1.5px solid var(--border2);border-radius:10px;font-family:var(--mono);font-size:.88rem;color:#fff;outline:none;transition:.2s;text-transform:uppercase}
+    .track-inp:focus{border-color:var(--blue)}
+    .btn-track{padding:12px 18px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-family:var(--font);font-weight:700;font-size:.83rem;cursor:pointer;transition:.2s;white-space:nowrap}
+    .btn-track:hover{background:var(--blue2)}
+    .track-result{background:var(--s1);border:1px solid var(--border2);border-radius:14px;padding:18px;display:none}
+    .track-result.show{display:block}
+    .track-rows{display:flex;flex-direction:column;gap:4px;margin-top:10px}
+    .track-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.8rem}
+    .track-row:last-child{border-bottom:none}.tk{color:var(--muted)}.tv{font-weight:700}
+    /* NOTIFS */
+    .notif-drop{position:absolute;top:66px;right:24px;width:340px;background:var(--s2);border:1px solid var(--border2);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.4);z-index:200;overflow:hidden;display:none}
+    .notif-drop.show{display:block}
+    .nd-hdr{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+    .nd-title{font-size:.85rem;font-weight:800}
+    .nd-clear{font-size:.72rem;font-weight:600;color:var(--blue2);cursor:pointer;background:none;border:none;font-family:var(--font)}
+    .nd-item{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.04);display:flex;align-items:flex-start;gap:10px;transition:.2s;cursor:pointer}
+    .nd-item:hover{background:rgba(255,255,255,.03)}
+    .nd-item.unread{background:rgba(18,70,245,.05)}
+    .nd-dot{width:7px;height:7px;border-radius:50%;background:var(--blue2);flex-shrink:0;margin-top:5px}
+    .nd-body{flex:1}
+    .nd-item-title{font-size:.8rem;font-weight:700;margin-bottom:2px}
+    .nd-item-body{font-size:.72rem;color:var(--muted);line-height:1.5}
+    .nd-item-time{font-size:.62rem;color:var(--dimmed);margin-top:3px}
+    .nd-empty{text-align:center;padding:24px;color:var(--muted);font-size:.82rem}
+    /* MODAL */
+    .modal-ov{position:fixed;inset:0;z-index:500;background:rgba(7,9,15,.88);backdrop-filter:blur(14px);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:.3s}
+    .modal-ov.show{opacity:1;pointer-events:all}
+    .modal{background:linear-gradient(135deg,var(--s2),var(--s3));border:1px solid var(--border2);border-radius:20px;padding:32px;max-width:420px;width:100%;text-align:center;transform:scale(.93);transition:.3s;box-shadow:0 32px 80px rgba(0,0,0,.5)}
+    .modal-ov.show .modal{transform:scale(1)}
+    .modal-icon{font-size:3rem;margin-bottom:12px}
+    .modal h3{font-size:1.3rem;font-weight:800;margin-bottom:8px}
+    .modal p{color:var(--muted);font-size:.85rem;line-height:1.65;margin-bottom:16px}
+    .ref-box{background:rgba(18,70,245,.1);border:1.5px solid rgba(18,70,245,.25);border-radius:11px;padding:13px;margin-bottom:18px;font-family:var(--mono);font-size:1.1rem;font-weight:700;color:#8ab4ff}
+    .modal-acts{display:flex;gap:8px}
+    .btn-modal-close{flex:1;padding:11px;background:rgba(255,255,255,.06);border:1px solid var(--border2);color:rgba(255,255,255,.6);border-radius:9px;font-family:var(--font);font-weight:600;cursor:pointer;transition:.2s}
+    .btn-modal-track{flex:2;padding:11px;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border:none;border-radius:9px;font-family:var(--font);font-weight:700;cursor:pointer;transition:.2s}
+    /* TOAST */
+    .toast{position:fixed;bottom:20px;right:20px;z-index:600;padding:10px 16px;border-radius:10px;font-size:.8rem;font-weight:700;transform:translateY(60px);opacity:0;transition:.3s;max-width:260px;pointer-events:none}
+    .toast.show{transform:translateY(0);opacity:1}
+    .toast.ok{background:var(--green);color:#002a1a}
+    .toast.err{background:var(--red);color:#fff}
+    @media(max-width:900px){
+      .sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}
+      .main{margin-left:0}.menu-btn{display:block}
+      .send-grid{grid-template-columns:1fr}.f2{grid-template-columns:1fr}
+      .stats-row{grid-template-columns:1fr 1fr}
+      .content{padding:16px}
+    }
+  </style>
+  <!-- Circle W3S PWA SDK -->
+  <script src="https://unpkg.com/@circle-fin/w3s-pw-web-sdk@1.0.10/dist/w3s-pw-web-sdk.umd.js"></script>
+</head>
+<body>
+<aside class="sidebar" id="sidebar">
+  <a href="/" class="sb-logo"><img src="logos/gamremit-logo.png" alt="GamRemit"/></a>
+  <nav class="sb-nav">
+    <div class="sb-sec">Menu</div>
+    <button class="sb-link active" id="nav-home" onclick="showPanel('home')"><span class="si">📊</span> Dashboard</button>
+    <button class="sb-link" id="nav-send" onclick="showPanel('send')"><span class="si">📤</span> Send Money</button>
+    <button class="sb-link" id="nav-track" onclick="showPanel('track')"><span class="si">🔍</span> Track Transfer</button>
+        <button class="sb-link" id="nav-wallet" onclick="showPanel('wallet')"><span class="si">💳</span> My Wallet</button>
+    <button class="sb-link" id="nav-history" onclick="showPanel('history')"><span class="si">📋</span> History</button>
+    <button class="sb-link" id="nav-rates" onclick="showPanel('rates')"><span class="si">💱</span> Exchange Rates</button>
+    <button class="sb-link" id="nav-swap" onclick="showPanel('swap')"><span class="si">⇄</span> Cross-Chain Swap <span style="margin-left:auto;font-size:.58rem;font-weight:800;padding:1px 6px;border-radius:100px;background:rgba(0,212,140,.12);border:1px solid rgba(0,212,140,.22);color:#00D48C">NEW</span></button>
+    <button class="sb-link" id="nav-payreq" onclick="showPanel('payreq')"><span class="si">🧾</span> Payment Requests <span style="margin-left:auto;font-size:.58rem;font-weight:800;padding:1px 6px;border-radius:100px;background:rgba(240,160,51,.12);border:1px solid rgba(240,160,51,.22);color:#F0A033">NEW</span></button>
+    <button class="sb-link" id="nav-payroll" onclick="showPanel('payroll')"><span class="si">💼</span> Payroll <span style="margin-left:auto;font-size:.58rem;font-weight:800;padding:1px 6px;border-radius:100px;background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.22);color:#8B5CF6">NEW</span></button>
+    <button class="sb-link" id="nav-bridge" onclick="showPanel('bridge')"><span class="si">🌉</span> Bridge <span style="margin-left:auto;font-size:.58rem;font-weight:800;padding:1px 6px;border-radius:100px;background:rgba(18,70,245,.12);border:1px solid rgba(18,70,245,.22);color:#8ab4ff">NEW</span></button>
+    <button class="sb-link" id="nav-arcnames" onclick="showPanel('arcnames')"><span class="si">🔷</span> .arc Names <span style="margin-left:auto;font-size:.58rem;font-weight:800;padding:1px 6px;border-radius:100px;background:rgba(0,212,140,.12);border:1px solid rgba(0,212,140,.22);color:#00D48C">NEW</span></button>
+    <div class="sb-sec">Account</div>
+    <button class="sb-link" id="nav-profile" onclick="showPanel('profile')"><span class="si">👤</span> My Profile</button>
+    <a href="/kyc.html" class="sb-link"><span class="si">🪪</span> KYC Status</a>
+    <button class="sb-link" onclick="logout()"><span class="si">🚪</span> Sign Out</button>
+  </nav>
+  <div class="sb-bottom">
+    <div id="statusChip" class="status-chip sc-pending">⏳ Pending Approval</div>
+    <div class="user-chip" onclick="showPanel('profile')" style="margin-top:8px">
+      <div class="user-av" id="userAv">—</div>
+      <div><div class="user-name" id="userName">Loading...</div><div class="user-email" id="userEmail">—</div></div>
+    </div>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+      <div><div class="tb-title" id="topTitle">Dashboard</div><div class="tb-sub" id="topSub">Welcome back</div></div>
+    </div>
+    <div class="tb-right">
+      <div style="position:relative">
+        <div class="notif-btn" id="notifBtn" onclick="toggleNotifs()">🔔<div class="notif-count" id="notifCount">0</div></div>
+        <div class="notif-drop" id="notifDrop">
+          <div class="nd-hdr"><div class="nd-title">Notifications</div><button class="nd-clear" onclick="markAllRead()">Mark all read</button></div>
+          <div id="notifList"><div class="nd-empty">No notifications yet</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- HOME -->
+    <div class="panel active" id="panel-home">
+      <div id="pendingBanner" class="pending-banner" style="display:none">
+        <div class="pb-icon">🪪</div>
+        <div>
+          <div class="pb-title">KYC Verification Pending</div>
+          <div class="pb-sub">Your documents are under review. You'll be notified by email once verified. Transfers will be enabled after approval.</div>
+          <a href="/kyc.html" style="display:inline-block;margin-top:8px;font-size:.78rem;font-weight:700;color:var(--gold);text-decoration:none;border:1px solid rgba(240,160,51,.3);padding:5px 13px;border-radius:8px">View KYC Status →</a>
+        </div>
+      </div>
+      <div class="stats-row">
+        <div class="stat"><div class="stat-icon">💸</div><div class="stat-label">Total Sent</div><div class="stat-val" id="st-sent">—</div></div>
+        <div class="stat"><div class="stat-icon">✅</div><div class="stat-label">Completed</div><div class="stat-val" id="st-done">—</div></div>
+        <div class="stat"><div class="stat-icon">⏳</div><div class="stat-label">Pending</div><div class="stat-val" id="st-pend">—</div></div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">Recent Transfers</div><button class="btn-outline" style="padding:6px 14px;font-size:.78rem" onclick="showPanel('history')">View All →</button></div>
+        <table class="tx-table"><thead><tr><th>Reference</th><th>Amount</th><th>Receives</th><th>Recipient</th><th>Date</th><th>Status</th></tr></thead>
+        <tbody id="homeTxBody"><tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">Loading...</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- SEND -->
+    <div class="panel" id="panel-send">
+      <div id="sendBlockedMsg" style="display:none" class="pending-banner"><div class="pb-icon">🔒</div><div><div class="pb-title">Account Not Active</div><div class="pb-sub">You cannot send transfers until your account is approved by admin.</div></div></div>
+      <div id="sendFormWrap">
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">📤 New Transfer</div><div style="font-size:.72rem;color:var(--muted)">Rate locks on submission</div></div>
+          <div class="step-bar">
+            <div class="sbi active" id="si1"><div class="sbi-circle">1</div><span>Your Info</span><div class="sbi-line"></div></div>
+            <div class="sbi" id="si2"><div class="sbi-circle">2</div><span>Recipient</span><div class="sbi-line"></div></div>
+            <div class="sbi" id="si3"><div class="sbi-circle">3</div><span>Receipt</span></div>
+          </div>
+          <form id="sendForm" novalidate>
+            <!-- STEP 1 -->
+            <div id="step-1" class="fb">
+              <div class="sec-lbl">Sender Details</div>
+              <div class="f2">
+                <div class="field"><label>Your Bank / MoMo <span class="req">*</span></label><select id="sAccountBank"><option value="">Select...</option><option>Trust Bank Gambia</option><option>GTBank Gambia</option><option>EcoBank Gambia</option><option>Afrimoney</option><option>Wave</option><option>QMoney</option><option>Other</option></select><div class="ferr" id="e-sAccountBank"></div></div>
+                <div class="field"><label>Account / Wallet No. <span class="req">*</span></label><input type="text" id="sAccountNumber" placeholder="Your account number"/><div class="ferr" id="e-sAccountNumber"></div></div>
+              </div>
+              <div class="sec-lbl" style="margin-top:4px">Amount</div>
+              <div class="f2">
+                <div class="field"><label>You Send <span class="req">*</span></label><div class="amt-wrap"><input type="number" id="sendAmount" placeholder="5000" min="1" oninput="fetchPreview();checkSendTier()"/><select id="sendCurrency" onchange="fetchPreview();checkSendTier()"><option value="GMD">🇬🇲 GMD</option><option value="USD">🇺🇸 USD</option><option value="USDC">💵 USDC</option></select></div><div class="ferr" id="e-sendAmount"></div></div>
+                <!-- KYC Tier indicator — shown when amount is entered -->
+                <div id="sendTierBanner" style="display:none;margin-top:8px;padding:10px 13px;border-radius:10px;font-size:.78rem;border:1px solid;display:none;align-items:center;gap:10px;flex-wrap:wrap">
+                  <span id="sendTierIcon" style="font-size:1.1rem">🟢</span>
+                  <div style="flex:1">
+                    <div id="sendTierLabel" style="font-weight:700;margin-bottom:1px">Tier 1 — Standard</div>
+                    <div id="sendTierNote" style="opacity:.75;font-size:.72rem;line-height:1.5">KYC level required for this amount</div>
+                  </div>
+                  <a id="sendTierLink" href="/kyc.html" style="font-size:.7rem;font-weight:700;padding:4px 10px;border-radius:7px;text-decoration:none;white-space:nowrap">Upgrade KYC →</a>
+                </div>
+                <div class="field"><label>Recipient Gets <span class="req">*</span></label><select id="recvCurrency" onchange="fetchPreview()"><option value="NGN">🇳🇬 NGN — Naira</option><option value="GMD">🇬🇲 GMD — Dalasi</option><option value="USDC">💵 USDC</option></select></div>
+              </div>
+              <div class="price-box">
+                <div class="pb-loading" id="pbLoad">Enter amount to see pricing →</div>
+                <div class="pb-main" id="pbMain">
+                  <div class="pb-row"><span class="pbk">Market Rate</span><span class="pbv" id="pb-rate">—</span></div>
+                  <div class="pb-row"><span class="pbk">Fee</span><span class="pbv go" id="pb-fee">—</span></div>
+                  <div class="pb-row"><span class="pbk">You Send</span><span class="pbv" id="pb-send">—</span></div>
+                  <div class="pb-row"><span class="pbk" style="color:#fff;font-weight:700">Recipient Gets</span><span class="pbv g" style="font-size:.9rem" id="pb-recv">—</span></div>
+                  <div class="pb-locked">🔒 Rate locked on submission · ⬡ Arc USDC Settlement</div>
+                </div>
+              </div>
+              <button type="button" class="btn-primary btn-full" onclick="goStep(2)">Continue → Recipient Info</button>
+            </div>
+            <!-- STEP 2 -->
+            <div id="step-2" class="fb" style="display:none">
+              <div class="sec-lbl">Recipient Details</div>
+              <div class="field"><label>Recipient Full Name <span class="req">*</span></label><input type="text" id="recipientName" placeholder="Emeka Obi"/><div class="ferr" id="e-recipientName"></div></div>
+              <div class="f2">
+                <div class="field"><label>Bank <span class="req">*</span></label><select id="bankName"><option value="">Select...</option><option>Access Bank</option><option>GTBank</option><option>First Bank</option><option>Zenith Bank</option><option>UBA</option><option>Kuda Bank</option><option>OPay</option><option>Palmpay</option><option>Moniepoint</option><option>Other</option></select><div class="ferr" id="e-bankName"></div></div>
+                <div class="field"><label>Account No. (10 digits) <span class="req">*</span></label><input type="text" id="accountNumber" placeholder="0123456789" maxlength="10"/><div class="ferr" id="e-accountNumber"></div></div>
+              </div>
+              <div style="display:flex;gap:10px;margin-top:4px">
+                <button type="button" class="btn-outline" onclick="goStep(1)">← Back</button>
+                <button type="button" class="btn-primary btn-full" onclick="goStep(3)">Continue → Upload Receipt</button>
+              </div>
+            </div>
+            <!-- STEP 3 -->
+            <div id="step-3" class="fb" style="display:none">
+              <div class="sec-lbl">Payment Receipt</div>
+              <div class="upload-zone" id="uploadZone">
+                <input type="file" id="receipt" accept="image/*" onchange="handleFile(event)"/>
+                <div id="uDef"><div style="font-size:1.6rem;margin-bottom:6px">📎</div><div style="font-size:.85rem;font-weight:600;color:var(--muted)">Click or drag receipt here</div><div style="font-size:.68rem;color:var(--dimmed);margin-top:3px">JPEG · PNG · WebP · Max 5MB</div></div>
+                <div id="uDone" style="display:none"><div style="font-size:1.4rem">✅</div><div style="font-size:.8rem;font-weight:700;color:var(--green);margin-top:4px" id="uFname">—</div></div>
+              </div>
+              <div class="ferr" id="e-receipt" style="margin-top:5px"></div>
+              <div id="txSummary" style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:11px;padding:13px;margin:12px 0;font-size:.8rem;display:none"></div>
+              <div style="display:flex;gap:10px;margin-top:4px">
+                <button type="button" class="btn-outline" onclick="goStep(2)">← Back</button>
+                <button type="submit" class="btn-primary btn-full" id="subBtn"><div class="spin" id="subSpin"></div><span id="subTxt">✅ Submit Transfer</span></button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRACK -->
+    <div class="panel" id="panel-track">
+      <div class="card" style="padding:20px">
+        <div style="font-size:.9rem;font-weight:800;margin-bottom:16px">🔍 Track Transfer</div>
+        <div class="track-form">
+          <input class="track-inp" type="text" id="trackInput" placeholder="GR-XXXXXX-XXXX"/>
+          <button class="btn-track" onclick="doTrack()">Track</button>
+        </div>
+        <div class="track-result" id="trackResult"></div>
+      </div>
+    </div>
+
+
+    <!-- WALLET -->
+    <div class="panel" id="panel-wallet">
+      <!-- Wallet overview card -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-hdr">
+          <div class="card-title">💳 My Circle Wallet</div>
+          <button onclick="loadWalletPanel()" style="font-size:.72rem;color:var(--blue2);background:none;border:none;cursor:pointer;font-weight:700;font-family:var(--font)">↻ Refresh</button>
+        </div>
+        <div style="padding:20px" id="walletContent">
+          <div style="text-align:center;padding:32px;color:var(--muted)">Loading wallet...</div>
+        </div>
+      </div>
+
+      <!-- Circle wallet setup card (shown when not initialized) -->
+      <div class="card" id="walletSetupCard" style="display:none;margin-bottom:16px">
+        <div class="card-hdr"><div class="card-title">🔐 Set Up Your Circle Wallet</div></div>
+        <div style="padding:20px">
+          <div style="padding:14px;background:rgba(18,70,245,.07);border:1px solid rgba(18,70,245,.18);border-radius:12px;margin-bottom:16px;font-size:.82rem;line-height:1.7;color:rgba(255,255,255,.8)">
+            Your <strong style="color:#8ab4ff">Circle User-Controlled Wallet</strong> is a non-custodial USDC wallet on Arc Testnet. You set your own PIN — Circle and GamRemit never have access to your funds.
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;font-size:.8rem">
+            <div style="display:flex;align-items:center;gap:10px"><span style="color:var(--green)">✓</span> Secured by your PIN — only you can send funds</div>
+            <div style="display:flex;align-items:center;gap:10px"><span style="color:var(--green)">✓</span> USDC native on Arc Testnet (Chain ID: 5042002)</div>
+            <div style="display:flex;align-items:center;gap:10px"><span style="color:var(--green)">✓</span> Sub-second transactions, zero ETH needed for gas</div>
+          </div>
+          <div class="form-err" id="walletSetupErr" style="margin-bottom:12px"></div>
+          <button onclick="initCircleWallet()" id="walletSetupBtn" style="width:100%;padding:13px;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border:none;border-radius:11px;font-family:var(--font);font-size:.92rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 5px 20px rgba(18,70,245,.4)">
+            <span class="spinner" id="walletSetupSpin"></span>
+            <span id="walletSetupBtnTxt">🔐 Create My Wallet & Set PIN</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Receive / QR card -->
+      <div class="card" id="walletReceiveCard" style="display:none">
+        <div class="card-hdr"><div class="card-title">📥 Receive USDC</div></div>
+        <div style="padding:20px;text-align:center">
+          <div style="font-size:.72rem;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.08em">Your Arc Testnet Wallet Address</div>
+          <div id="walletAddressDisplay" style="font-family:var(--mono);font-size:.78rem;padding:12px;background:rgba(255,255,255,.04);border:1px solid var(--border2);border-radius:10px;word-break:break-all;color:#8ab4ff;margin-bottom:12px">—</div>
+          <button onclick="copyWalletAddress()" style="padding:8px 20px;background:rgba(18,70,245,.12);border:1px solid rgba(18,70,245,.22);border-radius:9px;color:#8ab4ff;font-size:.8rem;font-weight:700;cursor:pointer;font-family:var(--font)">📋 Copy Address</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="panel" id="panel-history">
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">📋 All Transfers</div>
+          <select id="histFilter" onchange="loadHistory()" style="padding:6px 12px;background:rgba(255,255,255,.06);border:1px solid var(--border2);border-radius:8px;font-family:var(--font);font-size:.76rem;color:#fff;outline:none;cursor:pointer">
+            <option value="all">All Status</option><option value="pending">Pending</option><option value="processing">Processing</option><option value="completed">Completed</option><option value="rejected">Rejected</option>
+          </select>
+        </div>
+        <table class="tx-table"><thead><tr><th>Ref</th><th>Date</th><th>Sent</th><th>Receives</th><th>Recipient</th><th>Status</th><th>Note</th></tr></thead>
+        <tbody id="histBody"><tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Loading...</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- RATES -->
+    <div class="panel" id="panel-rates">
+      <div style="margin-bottom:18px"><div style="font-size:1.1rem;font-weight:800;margin-bottom:4px">💱 Exchange Rates</div><div style="font-size:.82rem;color:var(--muted)">Rates updated by admin. All include service fee.</div></div>
+      <div class="rates-grid" id="ratesGrid"><div style="color:var(--muted);font-size:.85rem">Loading rates...</div></div>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="panel" id="panel-profile">
+      <div class="card" style="max-width:520px">
+        <div class="card-hdr"><div class="card-title">👤 My Profile</div></div>
+        <div style="padding:20px">
+          <div style="display:flex;align-items:center;gap:16px;margin-bottom:22px">
+            <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--blue),#8B5CF6);display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:800" id="profAv">—</div>
+            <div><div style="font-size:1rem;font-weight:800" id="profName">—</div><div style="font-size:.78rem;color:var(--muted)" id="profEmail">—</div></div>
+          </div>
+          <div class="f2">
+            <div class="field"><label>First Name</label><input type="text" id="profFirst" placeholder="First name"/></div>
+            <div class="field"><label>Last Name</label><input type="text" id="profLast" placeholder="Last name"/></div>
+          </div>
+          <div class="field"><label>Phone</label><input type="text" id="profPhone" placeholder="+220 ..."/></div>
+          <div class="field"><label>Country</label><input type="text" id="profCountry" disabled style="opacity:.5;cursor:not-allowed"/></div>
+          <div class="field"><label>Account Status</label><input type="text" id="profStatus" disabled style="opacity:.5;cursor:not-allowed"/></div>
+          <button class="btn-primary" onclick="saveProfile()">Save Changes</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SWAP PANEL ── -->
+    <div class="panel" id="panel-swap">
+      <div style="margin-bottom:20px">
+        <div style="font-size:1.1rem;font-weight:800;letter-spacing:-.02em">⇄ Cross-Chain Swap</div>
+        <div style="font-size:.8rem;color:var(--muted);margin-top:3px">Swap USDC and tokens across Arc, Ethereum & Base · powered by Circle CCTP v2</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:460px 1fr;gap:20px;align-items:start">
+        <!-- Swap card -->
+        <div class="card" style="border-radius:20px;overflow:hidden">
+          <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+            <div style="font-size:.9rem;font-weight:800">⇄ Swap Tokens</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <button onclick="toggleSlip()" style="font-size:.7rem;font-weight:700;padding:4px 10px;background:rgba(18,70,245,.12);border:1px solid rgba(18,70,245,.22);border-radius:100px;color:#8ab4ff;cursor:pointer;font-family:var(--font);transition:.2s" id="slipBtn">⚙ <span id="slipDisp">0.5%</span></button>
+              <span style="font-size:.68rem;font-weight:700;padding:3px 9px;background:rgba(0,212,140,.08);border:1px solid rgba(0,212,140,.18);border-radius:100px;color:var(--green)">⬡ Arc</span>
+            </div>
+          </div>
+          <div style="padding:18px 22px">
+
+            <!-- From -->
+            <div style="background:rgba(255,255,255,.04);border:1.5px solid var(--border2);border-radius:14px;padding:14px;margin-bottom:4px">
+              <div style="display:flex;justify-content:space-between;font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">
+                <span>You Pay</span>
+                <span style="cursor:pointer" onclick="swpSetMax()" id="swpFromBal">Balance: —</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <button onclick="openTokModal('from')" style="display:flex;align-items:center;gap:7px;padding:7px 11px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:10px;cursor:pointer;min-width:110px;font-family:var(--font);color:#fff;transition:.2s" id="fromTokBtn">
+                  <div style="width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:800;color:#fff;flex-shrink:0" id="swpFromIcon"></div>
+                  <span style="font-size:.88rem;font-weight:800" id="swpFromSym">USDC</span>
+                  <span style="font-size:.65rem;color:var(--muted);margin-left:auto">▾</span>
+                </button>
+                <div style="flex:1;text-align:right">
+                  <input type="number" id="swpFromAmt" placeholder="0.00" min="0" oninput="calcSwap()" style="width:100%;background:none;border:none;outline:none;font-family:var(--mono);font-size:1.4rem;font-weight:700;color:#fff;text-align:right"/>
+                  <div style="font-size:.7rem;color:var(--muted);margin-top:2px;font-family:var(--mono)" id="swpFromUSD">≈ $0.00</div>
+                </div>
+              </div>
+              <div style="font-size:.62rem;color:var(--muted);margin-top:7px">Chain: <span id="swpFromChainName" style="color:#8ab4ff">Arc Testnet</span></div>
+            </div>
+
+            <!-- Swap arrow -->
+            <div style="display:flex;justify-content:center;margin:4px 0">
+              <button onclick="flipSwap()" style="width:38px;height:38px;border-radius:50%;background:var(--s2);border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1rem;transition:.3s;color:#fff" onmouseover="this.style.transform='rotate(180deg)'" onmouseout="this.style.transform='rotate(0)'">⇅</button>
+            </div>
+
+            <!-- To -->
+            <div style="background:rgba(255,255,255,.04);border:1.5px solid var(--border2);border-radius:14px;padding:14px;margin-bottom:4px">
+              <div style="display:flex;justify-content:space-between;font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">
+                <span>You Receive</span>
+                <span id="swpToBal">Balance: —</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <button onclick="openTokModal('to')" style="display:flex;align-items:center;gap:7px;padding:7px 11px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:10px;cursor:pointer;min-width:110px;font-family:var(--font);color:#fff;transition:.2s" id="toTokBtn">
+                  <div style="width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:800;color:#fff;flex-shrink:0" id="swpToIcon"></div>
+                  <span style="font-size:.88rem;font-weight:800" id="swpToSym">USDT</span>
+                  <span style="font-size:.65rem;color:var(--muted);margin-left:auto">▾</span>
+                </button>
+                <div style="flex:1;text-align:right">
+                  <input type="number" id="swpToAmt" placeholder="0.00" readonly style="width:100%;background:none;border:none;outline:none;font-family:var(--mono);font-size:1.4rem;font-weight:700;color:#fff;text-align:right;cursor:default"/>
+                  <div style="font-size:.7rem;color:var(--muted);margin-top:2px;font-family:var(--mono)" id="swpToUSD">≈ $0.00</div>
+                </div>
+              </div>
+              <div style="font-size:.62rem;color:var(--muted);margin-top:7px">Chain: <span id="swpToChainName" style="color:#8ab4ff">Ethereum</span></div>
+            </div>
+
+            <!-- Slippage panel -->
+            <div id="slipPanel" style="display:none;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:12px;margin:10px 0">
+              <div style="font-size:.63rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">Slippage Tolerance</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <button class="slip-opt active" onclick="setSlip(0.1,this)">0.1%</button>
+                <button class="slip-opt" onclick="setSlip(0.5,this)">0.5%</button>
+                <button class="slip-opt" onclick="setSlip(1.0,this)">1.0%</button>
+                <input type="number" placeholder="Custom %" min="0.01" max="50" step="0.1" oninput="setSlip(parseFloat(this.value),null)" style="flex:1;padding:6px 10px;background:rgba(255,255,255,.05);border:1.5px solid var(--border2);border-radius:8px;font-family:var(--mono);font-size:.78rem;color:#fff;outline:none;min-width:80px"/>
+              </div>
+            </div>
+
+            <!-- Route box -->
+            <div id="swpRoute" style="display:none;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin:12px 0">
+              <div style="display:flex;align-items:center;justify-content:space-between;font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">
+                <span>Route</span>
+                <span style="padding:2px 8px;border-radius:100px;background:rgba(0,212,140,.09);border:1px solid rgba(0,212,140,.18);color:var(--green)">⬡ Arc CCTP</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.78rem"><span style="color:var(--muted)">Rate</span><span style="font-weight:700;font-family:var(--mono)" id="rateDisp">—</span></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.78rem"><span style="color:var(--muted)">Network Fee</span><span style="font-weight:700;font-family:var(--mono);color:#8ab4ff" id="feeDisp">—</span></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.78rem"><span style="color:var(--muted)">Min Received</span><span style="font-weight:700;font-family:var(--mono);color:var(--green)" id="minDisp">—</span></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:.78rem"><span style="color:var(--muted)">Est. Time</span><span style="font-weight:700;font-family:var(--mono)" id="timeDisp">—</span></div>
+            </div>
+
+            <!-- Execute button -->
+            <button id="swpBtn" onclick="execSwap()" style="width:100%;padding:14px;background:linear-gradient(135deg,#1246F5,#2A5AFF);color:#fff;border:none;border-radius:12px;font-family:var(--font);font-size:.95rem;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;box-shadow:0 6px 24px rgba(18,70,245,.4);transition:.25s">
+              <div class="spinner" id="swpSpin"></div>
+              <span id="swpBtnTxt">🔗 Connect Wallet to Swap</span>
+            </button>
+
+            <div style="margin-top:12px;padding:10px 13px;background:rgba(0,212,140,.04);border:1px solid rgba(0,212,140,.1);border-radius:10px;font-size:.72rem;color:var(--muted);line-height:1.6">
+              ⬡ Swaps on Arc use <strong style="color:var(--green)">USDC as gas</strong> — no ETH required. Sub-second finality via Circle CCTP v2.
+              <br><strong style="color:rgba(255,255,255,.5)">Coming soon:</strong> Real on-chain execution. Currently previewing routes only.
+            </div>
+          </div>
+        </div>
+
+        <!-- Right column -->
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <!-- Arc info card -->
+          <div class="card">
+            <div style="padding:14px 16px;border-bottom:1px solid var(--border);font-size:.82rem;font-weight:800">⬡ Arc Network</div>
+            <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;font-size:.78rem">
+              <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Chain ID</span><span style="font-family:var(--mono);font-weight:700">5042002</span></div>
+              <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Gas Token</span><span style="color:var(--green);font-weight:700">USDC (native)</span></div>
+              <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Finality</span><span style="font-weight:700">&lt; 1 second</span></div>
+              <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">RPC</span><span style="font-family:var(--mono);font-size:.68rem;color:#8ab4ff">rpc.testnet.arc.network</span></div>
+              <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Explorer</span><a href="https://testnet.arcscan.app" target="_blank" style="color:#2A5AFF;text-decoration:none;font-weight:700;font-size:.72rem">testnet.arcscan.app ↗</a></div>
+              <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">USDC Address</span><span style="font-family:var(--mono);font-size:.62rem;color:#8ab4ff">0x3600...0000</span></div>
+            </div>
+          </div>
+
+          <!-- Token prices card -->
+          <div class="card">
+            <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+              <div style="font-size:.82rem;font-weight:800">Token Prices</div>
+              <button onclick="refreshTokPrices()" style="font-size:.72rem;color:#2A5AFF;background:none;border:none;cursor:pointer;font-family:var(--font);font-weight:700">↻ Refresh</button>
+            </div>
+            <div id="tokPricesBody" style="padding:6px"></div>
+          </div>
+
+          <!-- Supported chains -->
+          <div class="card">
+            <div style="padding:14px 16px;border-bottom:1px solid var(--border);font-size:.82rem;font-weight:800">Supported Chains</div>
+            <div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px;font-size:.78rem">
+              <div style="display:flex;align-items:center;gap:10px"><div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#1246F5,#2A5AFF);display:flex;align-items:center;justify-content:center;font-size:.8rem">⬡</div><div><div style="font-weight:700">Arc Testnet</div><div style="font-size:.65rem;color:var(--muted)">USDC native gas · ID 5042002</div></div></div>
+              <div style="display:flex;align-items:center;gap:10px"><div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#627EEA,#3C4FD6);display:flex;align-items:center;justify-content:center;font-size:.8rem">Ξ</div><div><div style="font-weight:700">Ethereum</div><div style="font-size:.65rem;color:var(--muted)">Mainnet · ETH gas</div></div></div>
+              <div style="display:flex;align-items:center;gap:10px"><div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#0052FF,#0047AB);display:flex;align-items:center;justify-content:center;font-size:.8rem">B</div><div><div style="font-weight:700">Base</div><div style="font-size:.65rem;color:var(--muted)">L2 · ETH gas</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- ── END SWAP PANEL ── -->
+
+  </div>
+</div>
+
+    <!-- ══ PAYMENT REQUESTS PANEL ══ -->
+    <div class="panel" id="panel-payreq">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+        <div>
+          <div style="font-size:1.1rem;font-weight:800;letter-spacing:-.02em">🧾 Payment Requests</div>
+          <div style="font-size:.8rem;color:var(--muted);margin-top:3px">Create invoices, share links and get paid in USDC on Arc</div>
+        </div>
+        <button onclick="openCreatePR()" style="padding:9px 18px;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border:none;border-radius:10px;font-family:var(--font);font-size:.82rem;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(18,70,245,.3)">+ New Request</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px">
+        <div class="stat" style="background:var(--s1)"><div class="stat-icon">📤</div><div class="stat-label">Sent Requests</div><div class="stat-val" id="pr-sent-count">—</div></div>
+        <div class="stat" style="background:var(--s1)"><div class="stat-icon">✅</div><div class="stat-label">Paid</div><div class="stat-val" id="pr-paid-count">—</div></div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">My Payment Requests</div><button onclick="loadPayReqs()" style="font-size:.72rem;color:var(--blue2);background:none;border:none;cursor:pointer;font-weight:700;font-family:var(--font)">↻ Refresh</button></div>
+        <div id="prList" style="padding:16px;min-height:120px"><div style="color:var(--muted);font-size:.82rem;text-align:center;padding:24px">Loading...</div></div>
+      </div>
+    </div>
+
+    <!-- ══ CREATE PR MODAL (inline) ══ -->
+    <div id="prModal" style="display:none;position:fixed;inset:0;z-index:400;background:rgba(7,9,15,.85);backdrop-filter:blur(12px);align-items:center;justify-content:center;padding:20px">
+      <div style="background:var(--s2);border:1px solid var(--border2);border-radius:18px;width:100%;max-width:440px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.5)">
+        <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+          <div style="font-size:.95rem;font-weight:800">Create Payment Request</div>
+          <button onclick="closePRModal()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem">✕</button>
+        </div>
+        <div style="padding:22px">
+          <div class="field"><label>Amount (USDC) <span class="req">*</span></label><input type="number" id="prAmount" placeholder="10.00" min="0.01" step="0.01"/></div>
+          <div class="field"><label>Description <span class="req">*</span></label><input type="text" id="prDesc" placeholder="e.g. Invoice #001 — Web design services"/></div>
+          <div class="field"><label>Recipient Email <span style="color:var(--muted)">(optional)</span></label><input type="email" id="prEmail" placeholder="payer@example.com"/></div>
+          <div class="form-err" id="prErr" style="margin-top:8px"></div>
+          <button onclick="createPayReq()" id="prBtn" style="width:100%;padding:13px;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border:none;border-radius:11px;font-family:var(--font);font-size:.9rem;font-weight:700;cursor:pointer;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px">
+            <span class="spinner" id="prSpin"></span>
+            <span id="prBtnTxt">Create & Get Link →</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PAYROLL PANEL ══ -->
+    <div class="panel" id="panel-payroll">
+      <div style="margin-bottom:20px">
+        <div style="font-size:1.1rem;font-weight:800;letter-spacing:-.02em">💼 Payroll — Bulk USDC Payments</div>
+        <div style="font-size:.8rem;color:var(--muted);margin-top:3px">Pay up to 100 recipients in a single batch transaction on Arc</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start">
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">New Payroll Batch</div></div>
+          <div style="padding:20px">
+            <div class="field"><label>Batch Title</label><input type="text" id="payTitle" placeholder="June 2025 Payroll"/></div>
+            <div style="margin-bottom:10px">
+              <label style="display:block;font-size:.63rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--dimmed);margin-bottom:8px">Recipients (name, wallet, amount per row)</label>
+              <div style="display:flex;gap:8px;margin-bottom:8px">
+                <button onclick="addPayrollRow()" style="padding:7px 14px;background:rgba(0,212,140,.08);border:1px solid rgba(0,212,140,.2);border-radius:8px;color:var(--green);font-size:.78rem;font-weight:700;cursor:pointer;font-family:var(--font)">+ Add Row</button>
+                <button onclick="importCSVPayroll()" style="padding:7px 14px;background:rgba(255,255,255,.06);border:1px solid var(--border2);border-radius:8px;color:var(--muted);font-size:.78rem;font-weight:700;cursor:pointer;font-family:var(--font)">📂 Import CSV</button>
+                <input type="file" id="csvInput" accept=".csv" style="display:none" onchange="handleCSV(event)"/>
+              </div>
+              <div id="payrollRows" style="display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto"></div>
+            </div>
+            <div id="payrollSummary" style="display:none;padding:12px 14px;background:rgba(0,212,140,.06);border:1px solid rgba(0,212,140,.15);border-radius:10px;font-size:.8rem;margin-bottom:12px">
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:var(--muted)">Recipients</span><span id="payCount" style="font-weight:700">0</span></div>
+              <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Total USDC</span><span id="payTotal" style="font-weight:800;font-family:var(--mono);color:var(--green)">0.00</span></div>
+            </div>
+            <div class="form-err" id="payErr"></div>
+            <button onclick="execPayroll()" id="payBtn" style="width:100%;padding:13px;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border:none;border-radius:11px;font-family:var(--font);font-size:.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px">
+              <span class="spinner" id="paySpin"></span>
+              <span id="payBtnTxt">🚀 Execute Payroll</span>
+            </button>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="card">
+            <div class="card-hdr"><div class="card-title">📋 Payroll History</div><button onclick="loadPayrollHistory()" style="font-size:.72rem;color:var(--blue2);background:none;border:none;cursor:pointer;font-weight:700;font-family:var(--font)">↻</button></div>
+            <div id="payrollHistory" style="padding:14px;min-height:80px"><div style="color:var(--muted);font-size:.78rem;text-align:center;padding:16px">No batches yet</div></div>
+          </div>
+          <div class="card">
+            <div style="padding:14px 16px;border-bottom:1px solid var(--border);font-size:.82rem;font-weight:800">📋 CSV Format</div>
+            <div style="padding:14px 16px;font-size:.74rem;color:var(--muted);line-height:1.8">
+              Upload a CSV file with columns:<br>
+              <code style="display:block;margin-top:8px;padding:8px 10px;background:rgba(255,255,255,.04);border-radius:6px;color:#8ab4ff;font-size:.7rem">name,wallet,amount<br>John Doe,0x123...abc,50.00<br>Jane Smith,0x456...def,75.00</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ BRIDGE PANEL ══ -->
+    <div class="panel" id="panel-bridge">
+      <div style="margin-bottom:20px">
+        <div style="font-size:1.1rem;font-weight:800;letter-spacing:-.02em">🌉 Bridge — USDC via CCTP V2</div>
+        <div style="font-size:.8rem;color:var(--muted);margin-top:3px">Move USDC between Arc Testnet and other testnets using Circle CCTP V2</div>
+      </div>
+      <div style="display:grid;grid-template-columns:480px 1fr;gap:20px;align-items:start">
+        <div class="card" style="border-radius:18px">
+          <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+            <div style="font-size:.9rem;font-weight:800">🌉 Bridge USDC</div>
+            <span style="font-size:.68rem;font-weight:700;padding:3px 9px;background:rgba(0,212,140,.08);border:1px solid rgba(0,212,140,.18);border-radius:100px;color:var(--green)">CCTP V2</span>
+          </div>
+          <div style="padding:20px 22px">
+            <div class="field">
+              <label>From Chain</label>
+              <select id="brFromChain">
+                <option value="arc">⬡ Arc Testnet (Chain ID: 5042002)</option>
+                <option value="sepolia">Ξ Ethereum Sepolia</option>
+                <option value="base-sepolia">B Base Sepolia</option>
+                <option value="avax-fuji">△ Avalanche Fuji</option>
+              </select>
+            </div>
+            <div style="text-align:center;font-size:1.4rem;margin:4px 0;cursor:pointer" onclick="flipBridgeChains()">⇅</div>
+            <div class="field">
+              <label>To Chain</label>
+              <select id="brToChain">
+                <option value="sepolia">Ξ Ethereum Sepolia</option>
+                <option value="base-sepolia">B Base Sepolia</option>
+                <option value="avax-fuji">△ Avalanche Fuji</option>
+                <option value="arc">⬡ Arc Testnet (Chain ID: 5042002)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Amount (USDC)</label>
+              <input type="number" id="brAmount" placeholder="10.00" min="0.001" step="0.001" oninput="updateBridgePreview()"/>
+            </div>
+            <div class="field">
+              <label>Destination Address <span style="color:var(--muted)">(leave blank to use your wallet)</span></label>
+              <input type="text" id="brAddress" placeholder="0x... or yourname.arc"/>
+            </div>
+
+            <!-- Preview box -->
+            <div id="brPreview" style="display:none;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:12px;padding:13px 15px;margin:14px 0">
+              <div style="font-size:.63rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">Estimated Preview</div>
+              <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:.8rem"><span style="color:var(--muted)">You send</span><span id="brSend" style="font-weight:700;font-family:var(--mono)">—</span></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:.8rem"><span style="color:var(--muted)">CCTP V2 Fee</span><span style="font-weight:700;font-family:var(--mono);color:#8ab4ff">~0.001 USDC</span></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:.8rem;border-top:1px solid rgba(255,255,255,.06);margin-top:4px;padding-top:8px"><span style="color:var(--muted)">You receive</span><span id="brReceive" style="font-weight:800;font-family:var(--mono);color:var(--green)">—</span></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:.8rem"><span style="color:var(--muted)">Estimated time</span><span style="font-weight:700">~2 minutes</span></div>
+            </div>
+
+            <div class="form-err" id="brErr"></div>
+            <button onclick="initBridge()" id="brBtn" style="width:100%;padding:14px;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border:none;border-radius:12px;font-family:var(--font);font-size:.95rem;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;box-shadow:0 6px 24px rgba(18,70,245,.4)">
+              <span class="spinner" id="brSpin"></span>
+              <span id="brBtnTxt">🌉 Initiate Bridge</span>
+            </button>
+            <div style="margin-top:12px;padding:10px;background:rgba(0,212,140,.04);border:1px solid rgba(0,212,140,.1);border-radius:9px;font-size:.72rem;color:var(--muted);line-height:1.6">
+              Powered by <strong style="color:var(--green)">Circle CCTP V2</strong> — trustless cross-chain USDC transfer with attestation-based minting.
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Bridge history -->
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="card">
+            <div class="card-hdr"><div class="card-title">🕐 Bridge History</div><button onclick="loadBridgeHistory()" style="font-size:.72rem;color:var(--blue2);background:none;border:none;cursor:pointer;font-weight:700;font-family:var(--font)">↻ Refresh</button></div>
+            <div id="bridgeHistory" style="padding:14px;min-height:80px"><div style="color:var(--muted);font-size:.78rem;text-align:center;padding:16px">No bridge transfers yet</div></div>
+          </div>
+          <div class="card">
+            <div style="padding:14px 16px;border-bottom:1px solid var(--border);font-size:.82rem;font-weight:800">How CCTP V2 Works</div>
+            <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;align-items:flex-start;gap:10px;font-size:.78rem"><div style="min-width:22px;height:22px;border-radius:50%;background:rgba(18,70,245,.2);border:1px solid rgba(18,70,245,.35);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800">1</div><div><strong>Burn</strong> — USDC burned on source chain</div></div>
+              <div style="display:flex;align-items:flex-start;gap:10px;font-size:.78rem"><div style="min-width:22px;height:22px;border-radius:50%;background:rgba(240,160,51,.12);border:1px solid rgba(240,160,51,.22);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800">2</div><div><strong>Attest</strong> — Circle attests burn on-chain</div></div>
+              <div style="display:flex;align-items:flex-start;gap:10px;font-size:.78rem"><div style="min-width:22px;height:22px;border-radius:50%;background:rgba(0,212,140,.1);border:1px solid rgba(0,212,140,.22);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800">3</div><div><strong>Mint</strong> — USDC minted on destination</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ARC NAMES PANEL ══ -->
+    <div class="panel" id="panel-arcnames">
+      <div style="margin-bottom:20px">
+        <div style="font-size:1.1rem;font-weight:800;letter-spacing:-.02em">🔷 .arc Name Registry</div>
+        <div style="font-size:.8rem;color:var(--muted);margin-top:3px">Register a human-readable .arc name linked to your Circle wallet address</div>
+      </div>
+      <div style="display:grid;grid-template-columns:440px 1fr;gap:20px;align-items:start">
+        <!-- Search + Register -->
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">Search & Register</div></div>
+          <div style="padding:20px">
+            <div style="display:flex;gap:8px;margin-bottom:14px">
+              <input type="text" id="arcSearchName" placeholder="yourname" style="flex:1;padding:11px 13px;background:rgba(255,255,255,.06);border:1.5px solid var(--border2);border-radius:10px;font-family:var(--font);font-size:.88rem;color:#fff;outline:none" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')"/>
+              <span style="display:flex;align-items:center;padding:0 10px;background:rgba(18,70,245,.12);border:1.5px solid rgba(18,70,245,.22);border-radius:10px;color:#8ab4ff;font-weight:800;font-size:.82rem;white-space:nowrap">.arc</span>
+            </div>
+            <button onclick="checkArcName()" id="arcCheckBtn" style="width:100%;padding:11px;background:rgba(255,255,255,.06);border:1px solid var(--border2);border-radius:10px;font-family:var(--font);font-size:.85rem;font-weight:700;color:#fff;cursor:pointer;margin-bottom:10px">🔍 Check Availability</button>
+            <div id="arcAvailResult" style="display:none;padding:12px;border-radius:10px;font-size:.82rem;margin-bottom:12px"></div>
+            <button onclick="registerArcName()" id="arcRegBtn" style="display:none;width:100%;padding:13px;background:linear-gradient(135deg,var(--green),#00A878);color:#fff;border:none;border-radius:11px;font-family:var(--font);font-size:.9rem;font-weight:700;cursor:pointer;align-items:center;justify-content:center;gap:8px">
+              <span class="spinner" id="arcRegSpin"></span>
+              <span id="arcRegBtnTxt">✅ Register .arc Name</span>
+            </button>
+            <div class="form-err" id="arcErr" style="margin-top:8px"></div>
+          </div>
+        </div>
+
+        <!-- My Names -->
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="card">
+            <div class="card-hdr"><div class="card-title">🔷 My .arc Names</div><button onclick="loadArcNames()" style="font-size:.72rem;color:var(--blue2);background:none;border:none;cursor:pointer;font-weight:700;font-family:var(--font)">↻</button></div>
+            <div id="arcNamesList" style="padding:14px;min-height:80px"><div style="color:var(--muted);font-size:.78rem;text-align:center;padding:16px">Loading...</div></div>
+          </div>
+          <div class="card">
+            <div style="padding:14px 16px;border-bottom:1px solid var(--border);font-size:.82rem;font-weight:800">ℹ About .arc Names</div>
+            <div style="padding:14px 16px;font-size:.78rem;color:var(--muted);line-height:1.8">
+              • Human-readable identifier on Arc Testnet<br>
+              • Linked to your Circle wallet address<br>
+              • Use <code style="color:#8ab4ff">yourname.arc</code> instead of <code style="color:#8ab4ff">0x...</code><br>
+              • Up to <strong style="color:#fff">3 names</strong> per account<br>
+              • Set one as <strong style="color:var(--green)">primary</strong> for receiving payments
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+<!-- SUCCESS MODAL -->
+<div class="modal-ov" id="successModal">
+  <div class="modal">
+    <div class="modal-icon">🎉</div>
+    <h3>Transfer Submitted!</h3>
+    <p>Your transfer is pending admin review. You'll be notified once approved. Settled via USDC on Arc.</p>
+    <div class="ref-box" id="modalRef">—</div>
+    <div class="modal-acts">
+      <button class="btn-modal-close" onclick="closeModal()">Close</button>
+      <button class="btn-modal-track" onclick="closeModal();showPanel('track')">Track Transfer →</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? `${location.protocol}//${location.hostname}:${location.port}` : '';
+let currentUser = null, currentStep = 1, lastPreview = null, previewDebounce = null;
+let notifData = [];
+
+// ── AUTH GUARD ──────────────────────────────────────────────────────────────
+const token = localStorage.getItem('gr_token');
+if (!token) window.location.href = '/index.html';
+
+async function loadUser() {
+  try {
+    const res = await fetch(`${API}/api/auth/me?notifs=1`, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    if (!data.user) { logout(); return; }
+    // Hard gate: redirect to KYC if not verified
+    if (data.user.kycStatus !== 'approved') {
+      // Redirect straight to KYC page — user must complete verification first
+      window.location.href = '/kyc.html';
+      return;
+    }
+    // Block suspended users
+    if (data.user.status === 'blocked') {
+      localStorage.removeItem('gr_token');
+      localStorage.removeItem('gr_user');
+      window.location.href = '/?blocked=1';
+      return;
+    }
+    currentUser = data.user;
+    notifData = data.notifications || [];
+    renderUserUI();
+    renderNotifs();
+    loadStats();
+    loadHomeTx();
+    loadRates();
+  } catch { logout(); }
+}
+
+function renderUserUI() {
+  const u = currentUser;
+  const av = u.avatar || `${u.firstName?.[0]}${u.lastName?.[0]}`.toUpperCase();
+  document.getElementById('userAv').textContent = av;
+  document.getElementById('userName').textContent = `${u.firstName} ${u.lastName}`;
+  document.getElementById('userEmail').textContent = u.email;
+  document.getElementById('topSub').textContent = `Welcome, ${u.firstName}`;
+  document.getElementById('profAv').textContent = av;
+  document.getElementById('profName').textContent = `${u.firstName} ${u.lastName}`;
+  document.getElementById('profEmail').textContent = u.email;
+  document.getElementById('profFirst').value = u.firstName || '';
+  document.getElementById('profLast').value = u.lastName || '';
+  document.getElementById('profPhone').value = u.phone || '';
+  document.getElementById('profCountry').value = u.country || '';
+  document.getElementById('profStatus').value = u.status?.toUpperCase() || '';
+  // Status chip
+  const chip = document.getElementById('statusChip');
+  const classes = { pending: 'sc-pending', active: 'sc-active', blocked: 'sc-blocked' };
+  const labels  = { pending: '⏳ Pending Approval', active: '✅ Active', blocked: '🚫 Blocked' };
+  chip.className = `status-chip ${classes[u.status] || 'sc-pending'}`;
+  chip.textContent = labels[u.status] || u.status;
+  // Pending banner
+  document.getElementById('pendingBanner').style.display = (u.status === 'pending' || u.kycStatus === 'pending') ? 'flex' : 'none';
+  // Send block
+  const blocked = u.status !== 'active';
+  document.getElementById('sendBlockedMsg').style.display = blocked ? 'flex' : 'none';
+  document.getElementById('sendFormWrap').style.display = blocked ? 'none' : 'block';
+}
+
+// ── NOTIFICATIONS ────────────────────────────────────────────────────────────
+function renderNotifs() {
+  const unread = notifData.filter(n => !n.read).length;
+  const countEl = document.getElementById('notifCount');
+  if (unread > 0) { countEl.textContent = unread > 9 ? '9+' : unread; countEl.style.display = 'flex'; }
+  else countEl.style.display = 'none';
+  const listEl = document.getElementById('notifList');
+  if (!notifData.length) { listEl.innerHTML = '<div class="nd-empty">No notifications</div>'; return; }
+  listEl.innerHTML = notifData.slice(0, 10).map(n => `
+    <div class="nd-item${n.read ? '' : ' unread'}">
+      ${!n.read ? '<div class="nd-dot"></div>' : '<div style="width:7px;flex-shrink:0"></div>'}
+      <div class="nd-body">
+        <div class="nd-item-title">${n.title}</div>
+        <div class="nd-item-body">${n.body}</div>
+        <div class="nd-item-time">${new Date(n.createdAt).toLocaleString()}</div>
+      </div>
+    </div>`).join('');
+}
+
+function toggleNotifs() {
+  document.getElementById('notifDrop').classList.toggle('show');
+  // Mark read when opening
+  fetch(`${API}/api/auth/me?markRead=1`, { headers: { Authorization: `Bearer ${token}` } });
+}
+function markAllRead() { notifData.forEach(n => n.read = true); renderNotifs(); document.getElementById('notifDrop').classList.remove('show'); }
+document.addEventListener('click', e => { if (!document.getElementById('notifBtn').contains(e.target) && !document.getElementById('notifDrop').contains(e.target)) document.getElementById('notifDrop').classList.remove('show'); });
+
+// ── PANELS ───────────────────────────────────────────────────────────────────
+const panelMeta = {
+  home:     { title: 'Dashboard',              sub: 'Your transfer overview' },
+  wallet:   { title: '💳 My Wallet',           sub: 'Your USDC wallet on Arc Testnet' },
+  send:     { title: '📤 Send Money',          sub: 'Submit a new transfer' },
+  track:    { title: '🔍 Track Transfer',      sub: 'Check transfer status' },
+  history:  { title: '📋 Transfer History',    sub: 'All your transactions' },
+  rates:    { title: '💱 Exchange Rates',      sub: 'Live rates from admin' },
+  profile:  { title: '👤 My Profile',          sub: 'Manage your account' },
+  swap:     { title: '⇄ Cross-Chain Swap',     sub: 'Swap USDC & tokens across Arc, Ethereum & Base · Circle CCTP v2' },
+  payreq:   { title: '🧾 Payment Requests',    sub: 'Create and track USDC invoices' },
+  payroll:  { title: '💼 Payroll',             sub: 'Bulk USDC payments in one batch' },
+  bridge:   { title: '🌉 Bridge',              sub: 'Cross-chain USDC via CCTP V2' },
+  arcnames: { title: '🔷 .arc Names',          sub: 'Your Web3 identity on Arc Testnet' },
+};
+function showPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sb-link').forEach(l => l.classList.remove('active'));
+  const panelEl = document.getElementById(`panel-${id}`);
+  if (!panelEl) { console.warn('[showPanel] no panel for:', id); return; }
+  panelEl.classList.add('active');
+  const nb = document.getElementById(`nav-${id}`);
+  if (nb) nb.classList.add('active');
+  const m = panelMeta[id] || {};
+  document.getElementById('topTitle').textContent = m.title || id;
+  document.getElementById('topSub').textContent   = m.sub   || '';
+  document.getElementById('sidebar').classList.remove('open');
+  // original panels
+  if (id === 'history')  loadHistory();
+  if (id === 'rates')    loadRates();
+  if (id === 'swap')     initSwapPanel();
+  // new panels
+  if (id === 'payreq')   loadPayReqs();
+  if (id === 'payroll')  loadPayrollHistory();
+  if (id === 'bridge')   loadBridgeHistory();
+  if (id === 'arcnames') loadArcNames();
+  if (id === 'wallet')   loadWalletPanel();
+}
+if (location.hash) showPanel(location.hash.slice(1));
+
+// ── STATS ────────────────────────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const res = await fetch(`${API}/api/transactions`, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    const txs = data.transactions || [];
+    const total = txs.filter(t => t.status === 'completed').reduce((s, t) => s + t.sendAmount, 0);
+    document.getElementById('st-sent').textContent = `${total.toLocaleString()} GMD`;
+    document.getElementById('st-done').textContent = txs.filter(t => t.status === 'completed').length;
+    document.getElementById('st-pend').textContent = txs.filter(t => t.status === 'pending' || t.status === 'processing').length;
+    renderTxTable(txs.slice(0, 5), 'homeTxBody', false);
+  } catch {}
+}
+
+function renderTxTable(txs, bodyId, full) {
+  const f = { GMD: '🇬🇲', NGN: '🇳🇬', USD: '🇺🇸', USDC: '💵' };
+  document.getElementById(bodyId).innerHTML = txs.length ? txs.map(tx => `<tr>
+    <td><div class="ref-mono">${tx.reference}</div></td>
+    ${full ? `<td style="font-size:.74rem;color:var(--muted)">${new Date(tx.createdAt).toLocaleDateString()}</td>` : ''}
+    <td><div class="amount-val">${Number(tx.sendAmount).toLocaleString()} ${f[tx.sendCurrency] || ''} ${tx.sendCurrency}</div></td>
+    <td><div class="amount-val" style="color:var(--green)">${typeof tx.receiveAmount === 'number' ? tx.receiveAmount.toLocaleString() : tx.receiveAmount} ${f[tx.receiveCurrency] || ''} ${tx.receiveCurrency}</div></td>
+    <td>${tx.recipientName}<div style="font-size:.68rem;color:var(--muted)">${tx.bankName}</div></td>
+    ${!full ? `<td>${new Date(tx.createdAt).toLocaleDateString()}</td>` : ''}
+    <td><span class="s-badge s-${tx.status}">${tx.status}</span></td>
+    ${full ? `<td style="font-size:.74rem;color:var(--muted);max-width:120px">${tx.adminNote || '—'}</td>` : ''}
+  </tr>`).join('') : `<tr><td colspan="${full ? 7 : 6}" style="text-align:center;padding:24px;color:var(--muted)">No transfers yet</td></tr>`;
+}
+
+function loadHomeTx() { /* called via loadStats */ }
+
+async function loadHistory() {
+  const filter = document.getElementById('histFilter').value;
+  try {
+    const url = `${API}/api/transactions${filter !== 'all' ? `?status=${filter}` : ''}`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    renderTxTable(data.transactions || [], 'histBody', true);
+  } catch {}
+}
+
+// ── RATES ────────────────────────────────────────────────────────────────────
+async function loadRates() {
+  try {
+    const res = await fetch(`${API}/api/rates`);
+    const data = await res.json();
+    const pairs = Object.entries(data.rates || {}).filter(([k]) => k.includes('-'));
+    document.getElementById('ratesGrid').innerHTML = pairs.filter(([,v]) => v.active).map(([pair, r]) => `
+      <div class="rate-card">
+        <div class="rate-pair">${pair.replace('-', ' → ')}</div>
+        <div class="rate-val">${(r.rate * (1 - r.fee / 100)).toFixed(r.rate < 1 ? 6 : 2)}</div>
+        <div class="rate-fee">Market: ${r.rate} · Fee: ${r.fee}%</div>
+        ${data.updatedAt ? `<div style="font-size:.6rem;color:var(--dimmed);margin-top:4px">Updated ${new Date(data.updatedAt).toLocaleString()}</div>` : ''}
+      </div>`).join('');
+  } catch {}
+}
+
+// ── SEND FORM ─────────────────────────────────────────────────────────────────
+let previewTimer;
+function fetchPreview() {
+  clearTimeout(previewTimer);
+  const amt = parseFloat(document.getElementById('sendAmount').value);
+  const from = document.getElementById('sendCurrency').value;
+  const to = document.getElementById('recvCurrency').value;
+  document.getElementById('pbLoad').style.display = 'block';
+  document.getElementById('pbMain').style.display = 'none';
+  if (!amt || amt <= 0) { lastPreview = null; return; }
+  previewTimer = setTimeout(async () => {
+    try {
+      const res = await fetch(`${API}/api/rates?preview=1&from=${from}&to=${to}&amount=${amt}`);
+      const d = await res.json();
+      if (d.receive !== undefined) {
+        lastPreview = { ...d, sendAmount: amt, sendCurrency: from, receiveCurrency: to };
+        document.getElementById('pbLoad').style.display = 'none';
+        document.getElementById('pbMain').style.display = 'block';
+        const f = { GMD: '🇬🇲', NGN: '🇳🇬', USD: '🇺🇸', USDC: '💵' };
+        document.getElementById('pb-rate').textContent = `1 ${from} = ${d.baseRate} ${to}`;
+        document.getElementById('pb-fee').textContent = `${d.fee}%`;
+        document.getElementById('pb-send').textContent = `${Number(amt).toLocaleString()} ${f[from] || ''} ${from}`;
+        document.getElementById('pb-recv').textContent = `${typeof d.receive === 'number' ? d.receive.toLocaleString() : d.receive} ${f[to] || ''} ${to}`;
+      } else { document.getElementById('pbLoad').textContent = d.error || 'Rate not available'; lastPreview = null; }
+    } catch { document.getElementById('pbLoad').textContent = 'Could not load rate'; lastPreview = null; }
+  }, 500);
+}
+
+function goStep(step) {
+  if (step > currentStep && !validateStep(currentStep)) return;
+  document.getElementById(`step-${currentStep}`).style.display = 'none';
+  ['si1', 'si2', 'si3'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    el.className = 'sbi' + (i + 1 < step ? ' done' : i + 1 === step ? ' active' : '');
+    el.querySelector('.sbi-circle').textContent = i + 1 < step ? '✓' : i + 1;
+  });
+  currentStep = step;
+  document.getElementById(`step-${step}`).style.display = 'block';
+  if (step === 3) buildSummary();
+}
+
+function validateStep(step) {
+  let ok = true;
+  const setErr = (id, msg) => { const e = document.getElementById(`e-${id}`); if (e) e.textContent = msg; ok = false; };
+  const clr = id => { const e = document.getElementById(`e-${id}`); if (e) e.textContent = ''; };
+  if (step === 1) {
+    ['sAccountBank', 'sAccountNumber', 'sendAmount'].forEach(clr);
+    if (!document.getElementById('sAccountBank').value) setErr('sAccountBank', 'Required');
+    if (!document.getElementById('sAccountNumber').value.trim()) setErr('sAccountNumber', 'Required');
+    const amt = parseFloat(document.getElementById('sendAmount').value);
+    if (!amt || amt <= 0) setErr('sendAmount', 'Enter valid amount');
+    if (!lastPreview && amt > 0) { fetchPreview(); setErr('sendAmount', 'Wait for pricing...'); }
+  }
+  if (step === 2) {
+    ['recipientName', 'bankName', 'accountNumber'].forEach(clr);
+    if (!document.getElementById('recipientName').value.trim()) setErr('recipientName', 'Required');
+    if (!document.getElementById('bankName').value) setErr('bankName', 'Select bank');
+    if (!/^\d{10}$/.test(document.getElementById('accountNumber').value)) setErr('accountNumber', '10 digits required');
+  }
+  return ok;
+}
+
+function buildSummary() {
+  if (!lastPreview) return;
+  const f = { GMD: '🇬🇲', NGN: '🇳🇬', USD: '🇺🇸', USDC: '💵' };
+  const el = document.getElementById('txSummary');
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div style="font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--dimmed);margin-bottom:8px">📋 Summary</div>
+    <div style="display:flex;flex-direction:column;gap:5px">
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">You Send</span><span style="font-weight:700">${Number(lastPreview.sendAmount).toLocaleString()} ${f[lastPreview.sendCurrency] || ''} ${lastPreview.sendCurrency}</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Recipient</span><span style="font-weight:700">${document.getElementById('recipientName').value} · ${document.getElementById('bankName').value}</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Account</span><span style="font-weight:700">${document.getElementById('accountNumber').value}</span></div>
+      <div style="display:flex;justify-content:space-between;padding-top:5px;border-top:1px solid rgba(255,255,255,.06)"><span style="font-weight:800;color:#fff">Receives</span><span style="font-weight:800;color:var(--green);font-size:.9rem">${typeof lastPreview.receive === 'number' ? lastPreview.receive.toLocaleString() : lastPreview.receive} ${f[lastPreview.receiveCurrency] || ''} ${lastPreview.receiveCurrency}</span></div>
+    </div>`;
+}
+
+let receiptBase64 = null, receiptName = null;
+function compressReceipt(dataUrl, maxWidth=800, quality=0.65) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let w = img.width, h = img.height;
+      if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+function handleFile(e) {
+  const file = e.target.files[0]; if (!file) return;
+  document.getElementById('e-receipt').textContent = '';
+  if (file.size > 10 * 1024 * 1024) { document.getElementById('e-receipt').textContent = 'Max 10MB'; return; }
+  const rd = new FileReader();
+  rd.onload = async ev => {
+    receiptBase64 = await compressReceipt(ev.target.result);
+    receiptName = file.name;
+    document.getElementById('uploadZone').classList.add('has');
+    document.getElementById('uDef').style.display = 'none';
+    document.getElementById('uDone').style.display = 'block';
+    document.getElementById('uFname').textContent = file.name;
+  };
+  rd.readAsDataURL(file);
+}
+
+document.getElementById('sendForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!receiptBase64) { document.getElementById('e-receipt').textContent = 'Receipt required'; return; }
+  const btn = document.getElementById('subBtn'), sp = document.getElementById('subSpin'), txt = document.getElementById('subTxt');
+  btn.disabled = true; sp.style.display = 'block'; txt.textContent = 'Submitting...';
+  try {
+    const body = {
+      sendAmount: document.getElementById('sendAmount').value,
+      sendCurrency: document.getElementById('sendCurrency').value,
+      receiveCurrency: document.getElementById('recvCurrency').value,
+      senderAccountBank: document.getElementById('sAccountBank').value,
+      senderAccountNumber: document.getElementById('sAccountNumber').value,
+      recipientName: document.getElementById('recipientName').value,
+      bankName: document.getElementById('bankName').value,
+      accountNumber: document.getElementById('accountNumber').value,
+      receiptBase64, receiptName,
+        receipt: receiptBase64
+    };
+    const res = await fetch(`${API}/api/transactions`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (data.transaction) {
+      document.getElementById('modalRef').textContent = data.transaction.reference;
+      document.getElementById('successModal').classList.add('show');
+      document.getElementById('sendForm').reset();
+      document.getElementById('uDef').style.display = 'block'; document.getElementById('uDone').style.display = 'none';
+      document.getElementById('uploadZone').classList.remove('has');
+      document.getElementById('pbMain').style.display = 'none'; document.getElementById('pbLoad').textContent = 'Enter amount to see pricing →'; document.getElementById('pbLoad').style.display = 'block';
+      receiptBase64 = null; receiptName = null; lastPreview = null; currentStep = 1; goStep(1);
+      loadStats();
+    } else { showToast(data.error || 'Submission failed', 'err'); }
+  } catch { showToast('Network error', 'err'); }
+  finally { btn.disabled = false; sp.style.display = 'none'; txt.textContent = '✅ Submit Transfer'; }
+});
+
+// ── TRACK ─────────────────────────────────────────────────────────────────────
+async function doTrack() {
+  const ref = document.getElementById('trackInput').value.trim().toUpperCase();
+  if (!ref) return;
+  const el = document.getElementById('trackResult');
+  el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--muted)">Looking up...</div>';
+  el.classList.add('show');
+  try {
+    const res = await fetch(`${API}/api/track/${ref}`);
+    const data = await res.json();
+    if (data.transaction) {
+      const tx = data.transaction, f = { GMD: '🇬🇲', NGN: '🇳🇬', USD: '🇺🇸', USDC: '💵' };
+      el.innerHTML = `
+        <span class="s-badge s-${tx.status}" style="margin-bottom:12px;display:inline-flex">${tx.status.toUpperCase()}</span>
+        <div class="track-rows">
+          <div class="track-row"><span class="tk">Reference</span><span class="tv" style="font-family:var(--mono)">${tx.reference}</span></div>
+          <div class="track-row"><span class="tk">You Sent</span><span class="tv">${Number(tx.sendAmount).toLocaleString()} ${f[tx.sendCurrency] || ''} ${tx.sendCurrency}</span></div>
+          <div class="track-row"><span class="tk">Receives</span><span class="tv" style="color:var(--green)">${typeof tx.receiveAmount === 'number' ? tx.receiveAmount.toLocaleString() : tx.receiveAmount} ${f[tx.receiveCurrency] || ''} ${tx.receiveCurrency}</span></div>
+          <div class="track-row"><span class="tk">Recipient</span><span class="tv">${tx.recipientName} · ${tx.bankName}</span></div>
+          <div class="track-row"><span class="tk">Submitted</span><span class="tv">${new Date(tx.createdAt).toLocaleString()}</span></div>
+          ${tx.adminNote ? `<div class="track-row"><span class="tk">Admin Note</span><span class="tv">${tx.adminNote}</span></div>` : ''}
+        </div>`;
+    } else { el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--muted)">Not found.</div>'; }
+  } catch { el.innerHTML = '<div style="color:var(--red);text-align:center;padding:16px">Network error.</div>'; }
+}
+document.getElementById('trackInput').addEventListener('keypress', e => { if (e.key === 'Enter') doTrack(); });
+
+// ── PROFILE ───────────────────────────────────────────────────────────────────
+async function saveProfile() {
+  const body = { firstName: document.getElementById('profFirst').value.trim(), lastName: document.getElementById('profLast').value.trim(), phone: document.getElementById('profPhone').value.trim() };
+  try {
+    const res = await fetch(`${API}/api/auth/me`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (data.user) { currentUser = data.user; renderUserUI(); showToast('Profile updated', 'ok'); }
+    else showToast(data.error || 'Failed', 'err');
+  } catch { showToast('Network error', 'err'); }
+}
+
+function logout() { localStorage.removeItem('gr_token'); localStorage.removeItem('gr_user'); window.location.href = '/index.html'; }
+function closeModal() { document.getElementById('successModal').classList.remove('show'); }
+function showToast(msg, type) { const t = document.getElementById('toast'); t.textContent = msg; t.className = `toast ${type} show`; setTimeout(() => t.className = 'toast', 3500); }
+
+loadUser();
+setInterval(loadUser, 60000);
+</script>
+</body>
+</html>
+<script>
+// ══════════════════════════════════════════════════════════════════
+// CROSS-CHAIN SWAP MODULE — modular, ready for real Arc/CCTP wiring
+// ══════════════════════════════════════════════════════════════════
+
+const SWP_TOKENS = [
+  {sym:'USDC', name:'USD Coin',      icon:'$', color:'linear-gradient(135deg,#2775CA,#5090FF)', price:1.000, chains:['Arc','Ethereum','Base']},
+  {sym:'USDT', name:'Tether USD',    icon:'₮', color:'linear-gradient(135deg,#26A17B,#1a7a5c)', price:1.000, chains:['Ethereum','Base']},
+  {sym:'EURC', name:'Euro Coin',     icon:'€', color:'linear-gradient(135deg,#003399,#0047AB)', price:1.089, chains:['Arc','Ethereum']},
+  {sym:'ETH',  name:'Ethereum',      icon:'Ξ', color:'linear-gradient(135deg,#627EEA,#3C4FD6)', price:3240.00, chains:['Ethereum']},
+  {sym:'DAI',  name:'Dai',           icon:'◈', color:'linear-gradient(135deg,#F4B731,#d4960f)', price:1.000, chains:['Ethereum','Base']},
+  {sym:'WETH', name:'Wrapped ETH',   icon:'Ξ', color:'linear-gradient(135deg,#627EEA,#3C4FD6)', price:3238.00, chains:['Ethereum','Base']},
+];
+
+const SWP_CHAINS = [
+  {id:'arc',      name:'Arc Testnet', chainId:'5042002', icon:'⬡', color:'linear-gradient(135deg,#1246F5,#2A5AFF)', native:'USDC'},
+  {id:'ethereum', name:'Ethereum',    chainId:'1',       icon:'Ξ', color:'linear-gradient(135deg,#627EEA,#3C4FD6)', native:'ETH'},
+  {id:'base',     name:'Base',        chainId:'8453',    icon:'B', color:'linear-gradient(135deg,#0052FF,#0047AB)', native:'ETH'},
+];
+
+let swpState = {
+  fromToken: SWP_TOKENS[0],  // USDC
+  toToken:   SWP_TOKENS[1],  // USDT
+  fromChain: SWP_CHAINS[0],  // Arc
+  toChain:   SWP_CHAINS[1],  // Ethereum
+  slippage:  0.5,
+  walletConnected: false,
+  mockBalances: { USDC: 0, USDT: 0, EURC: 0, ETH: 0, DAI: 0, WETH: 0 },
+  swapHistory: [],
+  initialized: false
+};
+
+// ── Add slip-opt CSS if not already present ──
+(function injectSwapStyles() {
+  if (document.getElementById('swapStyles')) return;
+  const s = document.createElement('style');
+  s.id = 'swapStyles';
+  s.textContent = `
+    .slip-opt{padding:5px 12px;background:rgba(255,255,255,.05);border:1.5px solid var(--border2);border-radius:8px;font-family:var(--font);font-size:.78rem;font-weight:700;color:var(--muted);cursor:pointer;transition:.2s}
+    .slip-opt:hover{border-color:rgba(18,70,245,.4);color:#fff}
+    .slip-opt.active{border-color:var(--blue);background:rgba(18,70,245,.15);color:#fff}
+    #panel-swap .card{background:var(--s1);border:1px solid var(--border2);border-radius:16px}
+    @media(max-width:900px){#panel-swap>div:last-child{grid-template-columns:1fr!important}}
+  `;
+  document.head.appendChild(s);
+})();
+
+function initSwapPanel() {
+  if (!swpState.initialized) {
+    swpUpdateTokenDisplay();
+    renderTokPrices();
+    swpState.initialized = true;
+  }
+}
+
+function swpUpdateTokenDisplay() {
+  const ft = swpState.fromToken, tt = swpState.toToken;
+  const fi = document.getElementById('swpFromIcon'), ti = document.getElementById('swpToIcon');
+  if (fi) { fi.style.background = ft.color; fi.textContent = ft.icon; }
+  if (ti) { ti.style.background = tt.color; ti.textContent = tt.icon; }
+  const fs = document.getElementById('swpFromSym'), ts = document.getElementById('swpToSym');
+  if (fs) fs.textContent = ft.sym;
+  if (ts) ts.textContent = tt.sym;
+  const fcn = document.getElementById('swpFromChainName'), tcn = document.getElementById('swpToChainName');
+  if (fcn) fcn.textContent = swpState.fromChain.name;
+  if (tcn) tcn.textContent = swpState.toChain.name;
+  if (swpState.walletConnected) {
+    const fb = document.getElementById('swpFromBal'), tb = document.getElementById('swpToBal');
+    if (fb) fb.textContent = `Balance: ${swpState.mockBalances[ft.sym] || 0} ${ft.sym}`;
+    if (tb) tb.textContent = `Balance: ${swpState.mockBalances[tt.sym] || 0} ${tt.sym}`;
+  }
+}
+
+function calcSwap() {
+  const fromAmt = parseFloat(document.getElementById('swpFromAmt').value) || 0;
+  const route = document.getElementById('swpRoute');
+  if (!fromAmt) {
+    document.getElementById('swpToAmt').value = '';
+    document.getElementById('swpFromUSD').textContent = '≈ $0.00';
+    document.getElementById('swpToUSD').textContent = '≈ $0.00';
+    if (route) route.style.display = 'none';
+    return;
+  }
+  const fp = swpState.fromToken.price || 1;
+  const tp = swpState.toToken.price || 1;
+  const impact = fromAmt > 10000 ? 0.12 : fromAmt > 1000 ? 0.05 : 0.01;
+  const fee = 0.001;
+  const slipFactor = 1 - (swpState.slippage / 100);
+  const ratio = (fp / tp) * (1 - impact / 100) * (1 - fee);
+  const toAmt = (fromAmt * ratio * slipFactor).toFixed(4);
+  document.getElementById('swpToAmt').value = toAmt;
+  document.getElementById('swpFromUSD').textContent = `≈ $${(fromAmt * fp).toFixed(2)}`;
+  document.getElementById('swpToUSD').textContent = `≈ $${(parseFloat(toAmt) * tp).toFixed(2)}`;
+  // Route info
+  if (route) route.style.display = 'block';
+  const rd = document.getElementById('rateDisp'), fd = document.getElementById('feeDisp');
+  const md = document.getElementById('minDisp'), td = document.getElementById('timeDisp');
+  if (rd) rd.textContent = `1 ${swpState.fromToken.sym} = ${ratio.toFixed(6)} ${swpState.toToken.sym}`;
+  if (fd) fd.textContent = `~${(fromAmt * fp * 0.001).toFixed(4)} USDC`;
+  if (md) md.textContent = `${(parseFloat(toAmt) * (1 - swpState.slippage / 100)).toFixed(4)} ${swpState.toToken.sym}`;
+  const isArc = swpState.fromChain.id === 'arc' || swpState.toChain.id === 'arc';
+  if (td) td.textContent = isArc ? '< 1 second' : '~2–5 minutes';
+}
+
+function flipSwap() {
+  [swpState.fromToken, swpState.toToken] = [swpState.toToken, swpState.fromToken];
+  [swpState.fromChain, swpState.toChain] = [swpState.toChain, swpState.fromChain];
+  swpUpdateTokenDisplay();
+  document.getElementById('swpFromAmt').value = '';
+  document.getElementById('swpToAmt').value = '';
+  const r = document.getElementById('swpRoute');
+  if (r) r.style.display = 'none';
+}
+
+function swpSetMax() {
+  if (!swpState.walletConnected) { showToast('Connect wallet first', 'err'); return; }
+  const bal = swpState.mockBalances[swpState.fromToken.sym] || 0;
+  document.getElementById('swpFromAmt').value = bal;
+  calcSwap();
+}
+
+function toggleSlip() {
+  const p = document.getElementById('slipPanel');
+  if (p) p.style.display = p.style.display === 'none' ? 'block' : 'none';
+}
+
+function setSlip(val, el) {
+  if (!val || val <= 0) return;
+  swpState.slippage = val;
+  const disp = document.getElementById('slipDisp');
+  if (disp) disp.textContent = val + '%';
+  document.querySelectorAll('.slip-opt').forEach(o => o.classList.remove('active'));
+  if (el) el.classList.add('active');
+  calcSwap();
+}
+
+async function execSwap() {
+  // ── FUTURE: replace simulation with real Circle CCTP / Arc SDK calls ──
+  if (!swpState.walletConnected) {
+    // Simulate wallet connect for preview
+    swpState.walletConnected = true;
+    swpState.mockBalances = { USDC: 245.50, USDT: 0, EURC: 32.10, ETH: 0.05, DAI: 150.00, WETH: 0 };
+    swpUpdateTokenDisplay();
+    const btn = document.getElementById('swpBtn');
+    if (btn) {
+      btn.style.background = 'linear-gradient(135deg,#1246F5,#2A5AFF)';
+      document.getElementById('swpBtnTxt').textContent = '⇄ Preview Swap';
+    }
+    showToast('Wallet simulated — real wallet connection coming in Circle integration phase', 'info');
+    return;
+  }
+  const amt = parseFloat(document.getElementById('swpFromAmt').value);
+  if (!amt || amt <= 0) { showToast('Enter an amount', 'err'); return; }
+  const bal = swpState.mockBalances[swpState.fromToken.sym] || 0;
+  if (amt > bal) { showToast(`Insufficient ${swpState.fromToken.sym} balance`, 'err'); return; }
+
+  const btn = document.getElementById('swpBtn'), spin = document.getElementById('swpSpin'), txt = document.getElementById('swpBtnTxt');
+  if (btn) btn.disabled = true;
+  if (spin) spin.style.display = 'block';
+  if (txt) txt.textContent = 'Simulating swap on Arc...';
+
+  await new Promise(r => setTimeout(r, 1800));
+
+  const toAmt = document.getElementById('swpToAmt').value;
+  swpState.mockBalances[swpState.fromToken.sym] = Math.max(0, bal - amt);
+  swpState.mockBalances[swpState.toToken.sym] = ((swpState.mockBalances[swpState.toToken.sym] || 0) + parseFloat(toAmt));
+  swpState.swapHistory.unshift({
+    from: swpState.fromToken.sym, to: swpState.toToken.sym,
+    fromAmt: amt, toAmt, time: new Date(),
+    fromChain: swpState.fromChain.name, toChain: swpState.toChain.name
+  });
+
+  showToast(`✅ Swap preview: ${amt} ${swpState.fromToken.sym} → ${toAmt} ${swpState.toToken.sym}`, 'ok');
+  document.getElementById('swpFromAmt').value = '';
+  document.getElementById('swpToAmt').value = '';
+  const r = document.getElementById('swpRoute');
+  if (r) r.style.display = 'none';
+  swpUpdateTokenDisplay();
+
+  if (btn) btn.disabled = false;
+  if (spin) spin.style.display = 'none';
+  if (txt) txt.textContent = '⇄ Preview Swap';
+}
+
+// ── Token selector modal (inline, no extra HTML needed) ──
+let swpTokTarget = 'from';
+function openTokModal(side) {
+  swpTokTarget = side;
+  const chain = side === 'from' ? swpState.fromChain : swpState.toChain;
+  const onChain = SWP_TOKENS.filter(t => t.chains.some(c => c.toLowerCase() === chain.name.toLowerCase().split(' ')[0]));
+  const others  = SWP_TOKENS.filter(t => !t.chains.some(c => c.toLowerCase() === chain.name.toLowerCase().split(' ')[0]));
+
+  const items = (label, list) => list.length ? `<div style="font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:8px 12px 4px">${label}</div>` +
+    list.map(t => `<div onclick="swpSelectTok('${t.sym}')" style="display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:10px;cursor:pointer;transition:.2s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background=''">
+      <div style="width:34px;height:34px;border-radius:50%;background:${t.color};display:flex;align-items:center;justify-content:center;font-size:.95rem;font-weight:800;color:#fff;flex-shrink:0">${t.icon}</div>
+      <div><div style="font-size:.88rem;font-weight:800">${t.sym}</div><div style="font-size:.7rem;color:var(--muted)">${t.name}</div></div>
+      ${swpState.walletConnected ? `<div style="margin-left:auto;font-family:var(--mono);font-size:.78rem;font-weight:700">${swpState.mockBalances[t.sym]||0}</div>` : ''}
+    </div>`).join('') : '';
+
+  const existing = document.getElementById('swpTokModal');
+  if (existing) existing.remove();
+
+  const ov = document.createElement('div');
+  ov.id = 'swpTokModal';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:500;background:rgba(7,9,15,.85);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:20px';
+  ov.innerHTML = `<div style="background:var(--s2);border:1px solid var(--border2);border-radius:18px;width:100%;max-width:380px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.5)">
+    <div style="padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <div style="font-size:.88rem;font-weight:800">Select Token</div>
+      <button onclick="document.getElementById('swpTokModal').remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem">✕</button>
+    </div>
+    <div style="max-height:350px;overflow-y:auto;padding:6px">
+      ${items('On ' + chain.name, onChain)}
+      ${items('Other Networks', others)}
+    </div>
+  </div>`;
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+  document.body.appendChild(ov);
+}
+
+function swpSelectTok(sym) {
+  const tok = SWP_TOKENS.find(t => t.sym === sym);
+  if (!tok) return;
+  if (swpTokTarget === 'from') swpState.fromToken = tok;
+  else swpState.toToken = tok;
+  swpUpdateTokenDisplay();
+  const m = document.getElementById('swpTokModal');
+  if (m) m.remove();
+  calcSwap();
+}
+
+// ── Token prices sidebar card ──
+function renderTokPrices() {
+  const body = document.getElementById('tokPricesBody');
+  if (!body) return;
+  body.innerHTML = SWP_TOKENS.slice(0, 5).map(t => {
+    const chg = ((Math.random() - 0.45) * 2).toFixed(2);
+    const up = parseFloat(chg) >= 0;
+    return `<div onclick="swpState.fromToken=SWP_TOKENS.find(x=>x.sym==='${t.sym}')||swpState.fromToken;swpUpdateTokenDisplay();showPanel('swap')"
+      style="display:flex;align-items:center;justify-content:space-between;padding:9px 10px;border-radius:10px;cursor:pointer;transition:.2s"
+      onmouseover="this.style.background='rgba(255,255,255,.04)'" onmouseout="this.style.background=''">
+      <div style="display:flex;align-items:center;gap:9px">
+        <div style="width:30px;height:30px;border-radius:50%;background:${t.color};display:flex;align-items:center;justify-content:center;font-size:.82rem;font-weight:800;color:#fff">${t.icon}</div>
+        <div><div style="font-size:.82rem;font-weight:700">${t.sym}</div><div style="font-size:.62rem;color:var(--muted)">${t.name}</div></div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-family:var(--mono);font-size:.82rem;font-weight:700">$${t.price.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:t.price>100?2:4})}</div>
+        <div style="font-size:.63rem;font-weight:700;color:${up?'var(--green)':'var(--red)'}">${up?'▲':'▼'} ${Math.abs(chg)}%</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function refreshTokPrices() { renderTokPrices(); showToast('Prices refreshed', 'info'); }
+
+
+// ═══════════════════════════════════════════════════════════
+// FEATURE 2 — PAYMENT REQUESTS
+// ═══════════════════════════════════════════════════════════
+async function loadPayReqs() {
+  try {
+    const res = await fetch(`${API}/api/pay/requests`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('gr_token')}` }
+    });
+    const data = await res.json();
+    if (!data.success) return;
+    const list  = data.paymentRequests || [];
+    const sent  = data.sent || [];
+    const paid  = list.filter(r => r.status === 'paid');
+    document.getElementById('pr-sent-count').textContent = sent.length;
+    document.getElementById('pr-paid-count').textContent = paid.length;
+    const el = document.getElementById('prList');
+    if (!list.length) { el.innerHTML = '<div style="color:var(--muted);font-size:.82rem;text-align:center;padding:24px">No payment requests yet. Create your first one!</div>'; return; }
+    el.innerHTML = list.map(r => {
+      const isExpired = new Date(r.expiresAt) < new Date();
+      const statusColor = r.status === 'paid' ? 'var(--green)' : r.status === 'cancelled' ? 'var(--muted)' : isExpired ? 'var(--gold)' : '#8ab4ff';
+      const statusLabel = r.status === 'paid' ? '✅ Paid' : r.status === 'cancelled' ? '❌ Cancelled' : isExpired ? '⏰ Expired' : '⏳ Pending';
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--border);font-size:.82rem;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:200px">
+          <div style="font-weight:700;margin-bottom:2px">${r.description}</div>
+          <div style="color:var(--muted);font-size:.72rem">Created ${new Date(r.createdAt).toLocaleDateString('en-GB')} · Code: <code style="color:#8ab4ff">${r.code}</code></div>
+        </div>
+        <div style="font-family:var(--mono);font-weight:800;font-size:.9rem">${r.amount} ${r.currency}</div>
+        <div style="font-weight:700;color:${statusColor}">${statusLabel}</div>
+        ${r.status === 'pending' ? `<button onclick="copyLink('${location.origin}/pay/${r.code}')" style="padding:5px 11px;background:rgba(18,70,245,.12);border:1px solid rgba(18,70,245,.22);border-radius:7px;color:#8ab4ff;font-size:.72rem;font-weight:700;cursor:pointer;font-family:var(--font)">📋 Copy Link</button>` : ''}
+        ${r.status === 'pending' ? `<button onclick="cancelPR('${r.code}')" style="padding:5px 11px;background:rgba(255,77,106,.08);border:1px solid rgba(255,77,106,.18);border-radius:7px;color:var(--red);font-size:.72rem;font-weight:700;cursor:pointer;font-family:var(--font)">✕ Cancel</button>` : ''}
+      </div>`;
+    }).join('');
+  } catch(e) { console.error('[payreq]', e); }
+}
+
+function copyLink(url) {
+  navigator.clipboard.writeText(url).then(() => showToast('📋 Link copied to clipboard!', 'ok'));
+}
+
+function openCreatePR() {
+  const m = document.getElementById('prModal');
+  m.style.display = 'flex';
+}
+function closePRModal() {
+  const m = document.getElementById('prModal');
+  m.style.display = 'none';
+  document.getElementById('prErr').style.display = 'none';
+}
+
+async function createPayReq() {
+  document.getElementById('prErr').style.display = 'none';
+  const amount = document.getElementById('prAmount').value;
+  const desc   = document.getElementById('prDesc').value.trim();
+  const email  = document.getElementById('prEmail').value.trim();
+  if (!amount || parseFloat(amount) <= 0) { showFormErr('prErr', 'Valid amount required'); return; }
+  if (!desc) { showFormErr('prErr', 'Description required'); return; }
+  const btn = document.getElementById('prBtn');
+  btn.disabled = true;
+  document.getElementById('prSpin').style.display = 'block';
+  document.getElementById('prBtnTxt').textContent = 'Creating...';
+  try {
+    const res = await fetch(`${API}/api/pay/requests`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('gr_token')}` },
+      body: JSON.stringify({ amount, currency: 'USDC', description: desc, recipientEmail: email || null })
+    });
+    const data = await res.json();
+    if (!data.success) { showFormErr('prErr', data.error || 'Failed to create'); return; }
+    closePRModal();
+    showToast('✅ Payment request created!', 'ok');
+    copyLink(`${location.origin}/pay/${data.code}`);
+    loadPayReqs();
+  } catch { showFormErr('prErr', 'Network error. Please retry.'); }
+  finally { btn.disabled = false; document.getElementById('prSpin').style.display = 'none'; document.getElementById('prBtnTxt').textContent = 'Create & Get Link →'; }
+}
+
+async function cancelPR(code) {
+  if (!confirm('Cancel this payment request?')) return;
+  try {
+    const res = await fetch(`${API}/api/pay/requests/${code}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${localStorage.getItem('gr_token')}` }
+    });
+    const data = await res.json();
+    if (data.success) { showToast('Payment request cancelled', 'info'); loadPayReqs(); }
+  } catch {}
+}
+
+function showFormErr(id, msg) { const el = document.getElementById(id); if(el){ el.textContent = msg; el.style.display = 'block'; } }
+
+// ═══════════════════════════════════════════════════════════
+// FEATURE 4 — PAYROLL
+// ═══════════════════════════════════════════════════════════
+let payrollRowCount = 0;
+
+function addPayrollRow(name='', wallet='', amount='') {
+  payrollRowCount++;
+  const id = `pr${payrollRowCount}`;
+  const row = document.createElement('div');
+  row.id = `row-${id}`;
+  row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr auto auto;gap:6px;align-items:center';
+  row.innerHTML = `
+    <input type="text" placeholder="Recipient name" value="${name}" onchange="updatePayrollSummary()" style="padding:8px 10px;background:rgba(255,255,255,.06);border:1.5px solid var(--border2);border-radius:8px;font-family:var(--font);font-size:.8rem;color:#fff;outline:none"/>
+    <input type="text" placeholder="0x... or name.arc" value="${wallet}" style="padding:8px 10px;background:rgba(255,255,255,.06);border:1.5px solid var(--border2);border-radius:8px;font-family:var(--font);font-size:.78rem;color:#fff;outline:none"/>
+    <input type="number" placeholder="USDC" value="${amount}" min="0.01" step="0.01" onchange="updatePayrollSummary()" style="width:80px;padding:8px 8px;background:rgba(255,255,255,.06);border:1.5px solid var(--border2);border-radius:8px;font-family:var(--mono);font-size:.8rem;color:#fff;outline:none"/>
+    <button onclick="document.getElementById('row-${id}').remove();updatePayrollSummary()" style="padding:8px;background:rgba(255,77,106,.08);border:1px solid rgba(255,77,106,.18);border-radius:7px;color:var(--red);cursor:pointer;font-size:.82rem">✕</button>
+  `;
+  document.getElementById('payrollRows').appendChild(row);
+  updatePayrollSummary();
+}
+
+function updatePayrollSummary() {
+  const rows = document.querySelectorAll('#payrollRows > div');
+  let total = 0, count = 0;
+  rows.forEach(row => {
+    const amtInput = row.querySelectorAll('input')[2];
+    const v = parseFloat(amtInput?.value || 0);
+    if (v > 0) { total += v; count++; }
+  });
+  document.getElementById('payrollSummary').style.display = count > 0 ? 'block' : 'none';
+  document.getElementById('payCount').textContent = count;
+  document.getElementById('payTotal').textContent = `${total.toFixed(2)} USDC`;
+}
+
+function importCSVPayroll() { document.getElementById('csvInput').click(); }
+
+function handleCSV(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const lines = ev.target.result.trim().split('
+');
+    let started = false;
+    lines.forEach(line => {
+      const parts = line.split(',').map(s => s.trim().replace(/^"|"$/g,''));
+      if (!started && (parts[0].toLowerCase() === 'name' || parts[0].toLowerCase() === '#')) { started = true; return; }
+      started = true;
+      if (parts.length >= 3 && parts[0]) addPayrollRow(parts[0], parts[1], parts[2]);
+    });
+    showToast(`CSV imported`, 'ok');
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+async function execPayroll() {
+  document.getElementById('payErr').style.display = 'none';
+  const rows = document.querySelectorAll('#payrollRows > div');
+  const recipients = [];
+  rows.forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    const name = inputs[0]?.value.trim();
+    const wallet = inputs[1]?.value.trim();
+    const amount = inputs[2]?.value.trim();
+    if (name && wallet && amount) recipients.push({ name, wallet, amount });
+  });
+  if (!recipients.length) { showFormErr('payErr', 'Add at least one recipient'); return; }
+  const title = document.getElementById('payTitle').value.trim() || undefined;
+
+  const btn = document.getElementById('payBtn');
+  btn.disabled = true;
+  document.getElementById('paySpin').style.display = 'block';
+  document.getElementById('payBtnTxt').textContent = 'Processing...';
+  try {
+    const res = await fetch(`${API}/api/pay/payroll`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('gr_token')}` },
+      body: JSON.stringify({ recipients, title })
+    });
+    const data = await res.json();
+    if (!data.success) { showFormErr('payErr', data.error || 'Payroll failed'); return; }
+    showToast(`✅ Payroll batch executed: ${recipients.length} recipients, ${recipients.reduce((s,r)=>s+parseFloat(r.amount),0).toFixed(2)} USDC`, 'ok');
+    document.getElementById('payrollRows').innerHTML = '';
+    document.getElementById('payTitle').value = '';
+    document.getElementById('payrollSummary').style.display = 'none';
+    loadPayrollHistory();
+    // Download receipt CSV
+    downloadPayrollCSV(data.batch);
+  } catch { showFormErr('payErr', 'Network error. Please retry.'); }
+  finally { btn.disabled = false; document.getElementById('paySpin').style.display = 'none'; document.getElementById('payBtnTxt').textContent = '🚀 Execute Payroll'; }
+}
+
+function downloadPayrollCSV(batch) {
+  const rows = [['Name', 'Wallet', 'Amount (USDC)', 'Status', 'Tx Hash', 'Sent At']];
+  batch.recipients.forEach(r => rows.push([r.name, r.wallet, r.amount, r.status, r.txHash || '', r.sentAt || '']));
+  const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('
+');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+  a.download = `payroll-${batch.id}.csv`;
+  a.click();
+  showToast('📥 Receipt downloaded as CSV', 'info');
+}
+
+async function loadPayrollHistory() {
+  try {
+    const res = await fetch(`${API}/api/pay/payroll`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('gr_token')}` }
+    });
+    const data = await res.json();
+    const el = document.getElementById('payrollHistory');
+    if (!data.success || !data.batches?.length) { el.innerHTML = '<div style="color:var(--muted);font-size:.78rem;text-align:center;padding:16px">No batches yet</div>'; return; }
+    el.innerHTML = data.batches.map(b => `
+      <div style="padding:11px 14px;border-bottom:1px solid var(--border);font-size:.78rem">
+        <div style="font-weight:700;margin-bottom:2px">${b.title}</div>
+        <div style="color:var(--muted)">${b.totalRecipients} recipients · ${b.totalAmount} USDC · ${new Date(b.createdAt).toLocaleDateString('en-GB')}</div>
+        <div style="color:var(--green);font-weight:700;margin-top:2px">${b.status === 'completed' ? '✅ Completed' : '🕐 Scheduled'}</div>
+      </div>`).join('');
+  } catch {}
+}
+
+// ═══════════════════════════════════════════════════════════
+// FEATURE 6 — BRIDGE
+// ═══════════════════════════════════════════════════════════
+function flipBridgeChains() {
+  const f = document.getElementById('brFromChain');
+  const t = document.getElementById('brToChain');
+  const tmp = f.value;
+  f.value = t.value;
+  t.value = tmp;
+  updateBridgePreview();
+}
+
+function updateBridgePreview() {
+  const amt = parseFloat(document.getElementById('brAmount').value);
+  const prev = document.getElementById('brPreview');
+  if (!amt || amt <= 0) { prev.style.display = 'none'; return; }
+  const fee = 0.001;
+  const net = (amt - fee).toFixed(6);
+  document.getElementById('brSend').textContent = `${amt.toFixed(6)} USDC`;
+  document.getElementById('brReceive').textContent = `${net} USDC`;
+  prev.style.display = 'block';
+}
+
+async function initBridge() {
+  document.getElementById('brErr').style.display = 'none';
+  const fromChain = document.getElementById('brFromChain').value;
+  const toChain   = document.getElementById('brToChain').value;
+  const amount    = document.getElementById('brAmount').value;
+  const toAddress = document.getElementById('brAddress').value.trim() || null;
+  if (fromChain === toChain) { showFormErr('brErr', 'Source and destination chains must be different'); return; }
+  if (!amount || parseFloat(amount) <= 0) { showFormErr('brErr', 'Enter a valid amount'); return; }
+  const btn = document.getElementById('brBtn');
+  btn.disabled = true;
+  document.getElementById('brSpin').style.display = 'block';
+  document.getElementById('brBtnTxt').textContent = 'Initiating...';
+  try {
+    const res = await fetch(`${API}/api/bridge/transfer`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('gr_token')}` },
+      body: JSON.stringify({ fromChain, toChain, amount, toAddress })
+    });
+    const data = await res.json();
+    if (!data.success) { showFormErr('brErr', data.error || 'Bridge failed'); return; }
+    showToast(`🌉 Bridge initiated! ID: ${data.bridge.id}`, 'ok');
+    document.getElementById('brAmount').value = '';
+    document.getElementById('brPreview').style.display = 'none';
+    loadBridgeHistory();
+  } catch { showFormErr('brErr', 'Network error. Please retry.'); }
+  finally { btn.disabled = false; document.getElementById('brSpin').style.display = 'none'; document.getElementById('brBtnTxt').textContent = '🌉 Initiate Bridge'; }
+}
+
+async function loadBridgeHistory() {
+  try {
+    const res = await fetch(`${API}/api/bridge/transfer`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('gr_token')}` }
+    });
+    const data = await res.json();
+    const el = document.getElementById('bridgeHistory');
+    if (!data.success || !data.history?.length) { el.innerHTML = '<div style="color:var(--muted);font-size:.78rem;text-align:center;padding:16px">No bridge transfers yet</div>'; return; }
+    el.innerHTML = data.history.map(b => {
+      const statusCol = b.status === 'complete' ? 'var(--green)' : b.status === 'attesting' ? 'var(--gold)' : '#8ab4ff';
+      return `<div style="padding:11px 14px;border-bottom:1px solid var(--border);font-size:.78rem">
+        <div style="font-weight:700;margin-bottom:2px">${b.fromChain.name} → ${b.toChain.name}</div>
+        <div style="color:var(--muted)">${b.amount} USDC · ${new Date(b.createdAt).toLocaleDateString('en-GB')}</div>
+        <div style="color:${statusCol};font-weight:700;margin-top:2px;text-transform:capitalize">${b.status === 'complete' ? '✅ Complete' : b.status === 'attesting' ? '🔄 Attesting' : '⏳ Initiated'}</div>
+      </div>`;
+    }).join('');
+  } catch {}
+}
+
+// ═══════════════════════════════════════════════════════════
+// FEATURE 7 — .ARC NAMES
+// ═══════════════════════════════════════════════════════════
+let checkedArcName = '';
+
+async function checkArcName() {
+  const name = document.getElementById('arcSearchName').value.trim();
+  if (!name || name.length < 3) { showFormErr('arcErr', 'Name must be at least 3 characters'); return; }
+  checkedArcName = name;
+  document.getElementById('arcCheckBtn').textContent = 'Checking...';
+  document.getElementById('arcAvailResult').style.display = 'none';
+  document.getElementById('arcRegBtn').style.display = 'none';
+  try {
+    const res = await fetch(`${API}/api/arc-names?name=${encodeURIComponent(name)}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('gr_token')}` }
+    });
+    const data = await res.json();
+    const el = document.getElementById('arcAvailResult');
+    el.style.display = 'block';
+    if (data.available) {
+      el.style.background = 'rgba(0,212,140,.08)';
+      el.style.border = '1px solid rgba(0,212,140,.2)';
+      el.style.color = 'var(--green)';
+      el.innerHTML = `✅ <strong>${name}.arc</strong> is available!`;
+      const btn = document.getElementById('arcRegBtn');
+      btn.style.display = 'flex';
+    } else {
+      el.style.background = 'rgba(255,77,106,.08)';
+      el.style.border = '1px solid rgba(255,77,106,.2)';
+      el.style.color = 'var(--red)';
+      el.innerHTML = `❌ <strong>${name}.arc</strong> is already taken${data.reason ? ' — ' + data.reason : ''}.`;
+    }
+  } catch { showFormErr('arcErr', 'Network error'); }
+  finally { document.getElementById('arcCheckBtn').textContent = '🔍 Check Availability'; }
+}
+
+async function registerArcName() {
+  const name = checkedArcName || document.getElementById('arcSearchName').value.trim();
+  if (!name) return;
+  document.getElementById('arcErr').style.display = 'none';
+  const btn = document.getElementById('arcRegBtn');
+  btn.disabled = true;
+  document.getElementById('arcRegSpin').style.display = 'block';
+  document.getElementById('arcRegBtnTxt').textContent = 'Registering...';
+  try {
+    const res = await fetch(`${API}/api/arc-names`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('gr_token')}` },
+      body: JSON.stringify({ name })
+    });
+    const data = await res.json();
+    if (!data.success) { showFormErr('arcErr', data.error || 'Registration failed'); return; }
+    showToast(`🔷 ${name}.arc registered!`, 'ok');
+    document.getElementById('arcAvailResult').style.display = 'none';
+    btn.style.display = 'none';
+    document.getElementById('arcSearchName').value = '';
+    loadArcNames();
+  } catch { showFormErr('arcErr', 'Network error. Please retry.'); }
+  finally { btn.disabled = false; document.getElementById('arcRegSpin').style.display = 'none'; document.getElementById('arcRegBtnTxt').textContent = '✅ Register .arc Name'; }
+}
+
+async function loadArcNames() {
+  try {
+    const res = await fetch(`${API}/api/arc-names`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('gr_token')}` }
+    });
+    const data = await res.json();
+    const el = document.getElementById('arcNamesList');
+    if (!data.success || !data.names?.length) { el.innerHTML = '<div style="color:var(--muted);font-size:.78rem;text-align:center;padding:16px">No .arc names registered yet</div>'; return; }
+    el.innerHTML = data.names.map(n => `
+      <div style="padding:12px 14px;border-bottom:1px solid var(--border);font-size:.82rem">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <span style="font-weight:800;color:#8ab4ff">${n.fullName}</span>
+          ${n.primary ? '<span style="font-size:.62rem;font-weight:700;padding:2px 8px;background:rgba(0,212,140,.1);border:1px solid rgba(0,212,140,.2);border-radius:100px;color:var(--green)">Primary</span>' : ''}
+        </div>
+        <div style="color:var(--muted);font-size:.72rem;margin-bottom:6px">
+          Registered ${new Date(n.registeredAt).toLocaleDateString('en-GB')} · Expires ${new Date(n.expiresAt).toLocaleDateString('en-GB')}
+        </div>
+        <div style="display:flex;gap:6px">
+          ${!n.primary ? `<button onclick="setPrimaryArcName('${n.name}')" style="padding:4px 10px;font-size:.68rem;font-weight:700;background:rgba(0,212,140,.08);border:1px solid rgba(0,212,140,.2);border-radius:7px;color:var(--green);cursor:pointer;font-family:var(--font)">Set Primary</button>` : ''}
+          <button onclick="copyLink('${n.walletAddress}')" style="padding:4px 10px;font-size:.68rem;font-weight:700;background:rgba(255,255,255,.05);border:1px solid var(--border2);border-radius:7px;color:var(--muted);cursor:pointer;font-family:var(--font)">📋 Copy Address</button>
+        </div>
+      </div>`).join('');
+  } catch {}
+}
+
+async function setPrimaryArcName(name) {
+  try {
+    await fetch(`${API}/api/arc-names`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('gr_token')}` },
+      body: JSON.stringify({ name })
+    });
+    showToast(`🔷 ${name}.arc set as primary`, 'ok');
+    loadArcNames();
+  } catch {}
+}
+
+// ═══════════════════════════════════════════════════════════
+// FEATURE 5 — AI ASSISTANT CHAT BUBBLE
+// ═══════════════════════════════════════════════════════════
+(function initAIChat() {
+  const bubble = document.createElement('div');
+  bubble.id = 'ai-bubble';
+  bubble.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:1000;cursor:pointer;width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#1246F5,#2A5AFF);box-shadow:0 6px 24px rgba(18,70,245,.5);display:flex;align-items:center;justify-content:center;font-size:1.5rem;transition:.2s;user-select:none';
+  bubble.innerHTML = '🤖';
+  bubble.title = 'GamBot — AI Assistant';
+  bubble.onclick = toggleAIChat;
+  document.body.appendChild(bubble);
+
+  const chatBox = document.createElement('div');
+  chatBox.id = 'ai-chatbox';
+  chatBox.style.cssText = 'position:fixed;bottom:88px;right:24px;z-index:999;width:340px;max-height:480px;background:var(--s1);border:1px solid var(--border2);border-radius:18px;box-shadow:0 16px 48px rgba(0,0,0,.5);display:none;flex-direction:column;overflow:hidden;font-size:.84rem';
+  chatBox.innerHTML = `
+    <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,rgba(18,70,245,.15),rgba(42,90,255,.1))">
+      <div style="display:flex;align-items:center;gap:9px">
+        <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#1246F5,#2A5AFF);display:flex;align-items:center;justify-content:center;font-size:.95rem">🤖</div>
+        <div><div style="font-weight:800;font-size:.85rem">GamBot</div><div style="font-size:.65rem;color:var(--green)">● Online · Powered by Groq</div></div>
+      </div>
+      <button onclick="toggleAIChat()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem">✕</button>
+    </div>
+    <div id="ai-messages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;max-height:300px">
+      <div style="align-self:flex-start;max-width:85%;padding:10px 13px;background:rgba(255,255,255,.07);border-radius:12px 12px 12px 0;font-size:.8rem;line-height:1.6;color:rgba(255,255,255,.85)">
+        👋 Hi! I'm GamBot, your GamRemit assistant. Ask me anything about transfers, corridors, fees, KYC, or any feature!
+      </div>
+    </div>
+    <div style="padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px">
+      <input id="ai-input" type="text" placeholder="Ask me anything..." style="flex:1;padding:9px 12px;background:rgba(255,255,255,.06);border:1.5px solid var(--border2);border-radius:9px;font-family:var(--font);font-size:.82rem;color:#fff;outline:none" onkeydown="if(event.key==='Enter')sendAIMsg()"/>
+      <button onclick="sendAIMsg()" id="ai-send-btn" style="padding:9px 13px;background:linear-gradient(135deg,var(--blue),var(--blue2));border:none;border-radius:9px;color:#fff;cursor:pointer;font-size:.85rem">➤</button>
+    </div>
+  `;
+  document.body.appendChild(chatBox);
+})();
+
+const aiHistory = [];
+
+function toggleAIChat() {
+  const box = document.getElementById('ai-chatbox');
+  const isOpen = box.style.display === 'flex';
+  box.style.display = isOpen ? 'none' : 'flex';
+  box.style.flexDirection = 'column';
+  if (!isOpen) document.getElementById('ai-input')?.focus();
+}
+
+async function sendAIMsg() {
+  const input = document.getElementById('ai-input');
+  const msg   = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  input.disabled = true;
+  document.getElementById('ai-send-btn').disabled = true;
+
+  appendAIMsg(msg, 'user');
+  aiHistory.push({ role: 'user', content: msg });
+
+  const typing = appendAIMsg('...', 'bot', true);
+
+  try {
+    const res = await fetch(`${API}/api/ai/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('gr_token')}` },
+      body: JSON.stringify({ messages: aiHistory })
+    });
+    const data = await res.json();
+    const reply = data.reply || data.error || 'Sorry, I could not respond right now.';
+    typing.textContent = reply;
+    typing.removeAttribute('data-typing');
+    aiHistory.push({ role: 'assistant', content: reply });
+    if (aiHistory.length > 20) aiHistory.splice(0, 2);
+  } catch {
+    typing.textContent = 'Network error. Please retry.';
+  } finally {
+    input.disabled = false;
+    document.getElementById('ai-send-btn').disabled = false;
+    input.focus();
+  }
+}
+
+function appendAIMsg(text, role, isTyping = false) {
+  const msgs = document.getElementById('ai-messages');
+  const div  = document.createElement('div');
+  const isBot = role === 'bot';
+  div.style.cssText = `align-self:${isBot ? 'flex-start' : 'flex-end'};max-width:85%;padding:10px 13px;background:${isBot ? 'rgba(255,255,255,.07)' : 'rgba(18,70,245,.2)'};border-radius:${isBot ? '12px 12px 12px 0' : '12px 12px 0 12px'};font-size:.8rem;line-height:1.6;color:rgba(255,255,255,.85)`;
+  div.textContent = text;
+  if (isTyping) div.setAttribute('data-typing', '1');
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+// Panel meta and showPanel fully defined above.
+
+
+// ═════════════════════════════════════════════════════════
+// KYC TIER CHECKER — Send Money panel
+// ═════════════════════════════════════════════════════════
+const SEND_TIERS = [
+  { tier:0, label:'Basic',              color:'#8ab4ff', icon:'🔵', minGMD:0,     maxGMD:2999     },
+  { tier:1, label:'Tier 1 — Standard', color:'#00D48C', icon:'🟢', minGMD:3000,  maxGMD:4999     },
+  { tier:2, label:'Tier 2 — Enhanced', color:'#F0A033', icon:'🟡', minGMD:5000,  maxGMD:9999     },
+  { tier:3, label:'Tier 3 — Advanced', color:'#C084FC', icon:'🟣', minGMD:10000, maxGMD:14999    },
+  { tier:4, label:'Tier 4 — Elite',    color:'#F0A033', icon:'⭐', minGMD:15000, maxGMD:Infinity },
+];
+
+function checkSendTier() {
+  const amount   = parseFloat(document.getElementById('sendAmount')?.value) || 0;
+  const currency = document.getElementById('sendCurrency')?.value || 'GMD';
+  const banner   = document.getElementById('sendTierBanner');
+  if (!banner) return;
+
+  if (amount <= 0) { banner.style.display = 'none'; return; }
+
+  // Convert to GMD
+  const rates = { GMD:1, USD:61.5, USDC:61.73, NGN:0.0806 };
+  const amtGMD = amount * (rates[currency] || 1);
+  const tier   = SEND_TIERS.find(t => amtGMD >= t.minGMD && amtGMD <= t.maxGMD) || SEND_TIERS[0];
+
+  // Get user's current tier level
+  const usr = JSON.parse(localStorage.getItem('gr_user') || '{}');
+  const userTier   = usr.kycTierLevel || 0;
+  const kycApproved = usr.kycStatus === 'approved';
+  const sufficient  = kycApproved && userTier >= tier.tier;
+
+  banner.style.display = 'flex';
+  banner.style.background = sufficient
+    ? `rgba(0,212,140,.07)` : `rgba(240,160,51,.07)`;
+  banner.style.borderColor = sufficient
+    ? `rgba(0,212,140,.25)` : `rgba(240,160,51,.3)`;
+
+  document.getElementById('sendTierIcon').textContent  = tier.icon;
+  document.getElementById('sendTierLabel').textContent = `${tier.label} required`;
+  document.getElementById('sendTierLabel').style.color = tier.color;
+
+  const link = document.getElementById('sendTierLink');
+  if (sufficient) {
+    document.getElementById('sendTierNote').textContent = `✅ Your KYC covers this amount`;
+    link.style.display = 'none';
+  } else if (!kycApproved) {
+    document.getElementById('sendTierNote').textContent = `KYC not yet approved — submit ${tier.label} documents`;
+    link.textContent = 'Submit KYC →';
+    link.style.display = 'inline-block';
+    link.style.background = `rgba(240,160,51,.15)`;
+    link.style.color = '#F0A033';
+    link.href = '/kyc.html';
+  } else {
+    document.getElementById('sendTierNote').textContent = `Your current Tier ${userTier} doesn't cover this amount`;
+    link.textContent = 'Upgrade KYC →';
+    link.style.display = 'inline-block';
+    link.style.background = `rgba(240,160,51,.15)`;
+    link.style.color = '#F0A033';
+    link.href = '/kyc.html';
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// CIRCLE WALLET INTEGRATION
+// ═══════════════════════════════════════════════════════════
+let circleSDK = null;
+let circleState = {};   // { userToken, encryptionKey, appId, circleUserId, challengeId }
+
+// ── Init Circle W3S SDK ───────────────────────────────────
+function getCircleSDK() {
+  if (circleSDK) return circleSDK;
+  try {
+    // W3S SDK exposed as global W3SSdk from UMD bundle
+    if (typeof W3SSdk !== 'undefined') {
+      circleSDK = new W3SSdk();
+      return circleSDK;
+    }
+  } catch(e) { console.warn('[circle:sdk]', e.message); }
+  return null;
+}
+
+// ── Load wallet panel ─────────────────────────────────────
+async function loadWalletPanel() {
+  const el = document.getElementById('walletContent');
+  if (!el) return;
+  el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted)">⏳ Loading wallet...</div>';
+  document.getElementById('walletSetupCard').style.display    = 'none';
+  document.getElementById('walletReceiveCard').style.display  = 'none';
+
+  const usr = JSON.parse(localStorage.getItem('gr_user') || '{}');
+
+  // ── Has initialized Circle wallet ────────────────────────
+  if (usr.circleWalletId && usr.circleWalletAddress) {
+    await renderWalletLoaded(usr);
+    return;
+  }
+
+  // ── Has Circle user but no wallet yet ────────────────────
+  if (usr.circleUserId) {
+    renderWalletNotSetUp(usr);
+    return;
+  }
+
+  // ── No Circle account at all ─────────────────────────────
+  el.innerHTML = `
+    <div style="text-align:center;padding:20px">
+      <div style="font-size:2.5rem;margin-bottom:12px">💳</div>
+      <div style="font-weight:800;margin-bottom:8px">No wallet yet</div>
+      <div style="font-size:.82rem;color:var(--muted);margin-bottom:16px;line-height:1.6">
+        Create your Circle User-Controlled Wallet to send, receive, and manage USDC on Arc Testnet.
+      </div>
+    </div>`;
+  document.getElementById('walletSetupCard').style.display = 'block';
+}
+
+// ── Render wallet when fully loaded ──────────────────────
+async function renderWalletLoaded(usr) {
+  const el = document.getElementById('walletContent');
+
+  // Fetch USDC balance from Arc Testnet
+  let balance = '—';
+  try {
+    const res  = await fetch(`${API}/api/payment-account`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('gr_token')}` }
+    });
+    const data = await res.json();
+    balance = data?.balance ?? '—';
+  } catch {}
+
+  const addr = usr.circleWalletAddress || '—';
+  const short = addr !== '—' ? addr.slice(0,8) + '...' + addr.slice(-6) : '—';
+  const tierInfo = { 0:'🔵 Basic', 1:'🟢 Tier 1', 2:'🟡 Tier 2', 3:'🟣 Tier 3', 4:'⭐ Elite' };
+  const tier = tierInfo[usr.kycTierLevel] || '🔵 Basic';
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px">
+      <div class="stat" style="background:var(--bg)">
+        <div class="stat-icon">💵</div>
+        <div class="stat-label">USDC Balance</div>
+        <div class="stat-val" style="font-family:var(--mono)">${balance}</div>
+      </div>
+      <div class="stat" style="background:var(--bg)">
+        <div class="stat-icon">🏅</div>
+        <div class="stat-label">KYC Tier</div>
+        <div class="stat-val" style="font-size:.85rem">${tier}</div>
+      </div>
+    </div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:.63rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">Wallet Details</div>
+      <div style="display:flex;flex-direction:column;gap:0">
+        <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:.82rem">
+          <span style="color:var(--muted)">Network</span>
+          <span style="font-weight:700;color:var(--green)">⬡ Arc Testnet</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:.82rem">
+          <span style="color:var(--muted)">Chain ID</span>
+          <span style="font-weight:700;font-family:var(--mono)">5042002</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:.82rem">
+          <span style="color:var(--muted)">Wallet Type</span>
+          <span style="font-weight:700">Circle EOA</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:9px 0;font-size:.82rem">
+          <span style="color:var(--muted)">Address</span>
+          <span style="font-weight:700;font-family:var(--mono);color:#8ab4ff">${short}</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="copyWalletAddress()" style="flex:1;padding:10px;background:rgba(18,70,245,.1);border:1px solid rgba(18,70,245,.22);border-radius:10px;color:#8ab4ff;font-size:.8rem;font-weight:700;cursor:pointer;font-family:var(--font)">📋 Copy Address</button>
+      <button onclick="openFaucetLink()" style="flex:1;padding:10px;background:rgba(0,212,140,.08);border:1px solid rgba(0,212,140,.2);border-radius:10px;color:var(--green);font-size:.8rem;font-weight:700;cursor:pointer;font-family:var(--font)">🚰 Get Test USDC</button>
+    </div>`;
+
+  // Show receive card
+  document.getElementById('walletAddressDisplay').textContent = addr;
+  document.getElementById('walletReceiveCard').style.display = 'block';
+}
+
+// ── Render wallet not set up yet ──────────────────────────
+function renderWalletNotSetUp(usr) {
+  const el = document.getElementById('walletContent');
+  el.innerHTML = `
+    <div style="text-align:center;padding:20px">
+      <div style="font-size:2.5rem;margin-bottom:10px">⚙️</div>
+      <div style="font-weight:800;margin-bottom:6px">Wallet Not Initialized</div>
+      <div style="font-size:.82rem;color:var(--muted);line-height:1.6">
+        Your Circle account exists but your wallet hasn't been set up yet. Click below to create your wallet and set a PIN.
+      </div>
+    </div>`;
+  document.getElementById('walletSetupCard').style.display = 'block';
+}
+
+// ── Initialize Circle wallet (PIN setup) ──────────────────
+async function initCircleWallet() {
+  const btn = document.getElementById('walletSetupBtn');
+  const err = document.getElementById('walletSetupErr');
+  err.style.display = 'none';
+  btn.disabled = true;
+  document.getElementById('walletSetupSpin').style.display = 'block';
+  document.getElementById('walletSetupBtnTxt').textContent = 'Connecting to Circle...';
+
+  try {
+    // Step 1: Get challenge from backend
+    const res  = await fetch(`${API}/api/auth/circle-init`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('gr_token')}`
+      },
+      body: JSON.stringify({})
+    });
+    const data = await res.json();
+
+    if (data.skipped || !data.userToken) {
+      // Circle not configured — show friendly message
+      err.textContent = 'Circle wallet service not configured yet. Contact support.';
+      err.style.display = 'block';
+      return;
+    }
+
+    if (data.alreadyInitialized) {
+      showToast('✅ Wallet already set up!', 'ok');
+      // Refresh user and reload panel
+      await refreshUserFromServer();
+      loadWalletPanel();
+      return;
+    }
+
+    // Save state for SDK
+    circleState = {
+      userToken:     data.userToken,
+      encryptionKey: data.encryptionKey,
+      appId:         data.appId,
+      circleUserId:  data.circleUserId,
+      challengeId:   data.challengeId,
+    };
+
+    document.getElementById('walletSetupBtnTxt').textContent = 'Opening PIN setup...';
+
+    // Step 2: Execute challenge with Circle SDK
+    const sdk = getCircleSDK();
+    if (!sdk) {
+      err.textContent = 'Circle SDK failed to load. Please refresh the page.';
+      err.style.display = 'block';
+      return;
+    }
+
+    sdk.setAppSettings({ appId: data.appId });
+    sdk.setAuthentication({
+      userToken:     data.userToken,
+      encryptionKey: data.encryptionKey,
+    });
+
+    // Execute the wallet init challenge (opens PIN modal)
+    sdk.execute(data.challengeId, async (error, result) => {
+      if (error) {
+        console.error('[circle:challenge]', error);
+        err.textContent = `Wallet setup failed: ${error.message || 'Unknown error'}`;
+        err.style.display = 'block';
+        btn.disabled = false;
+        document.getElementById('walletSetupSpin').style.display = 'none';
+        document.getElementById('walletSetupBtnTxt').textContent = '🔐 Create My Wallet & Set PIN';
+        return;
+      }
+
+      // Step 3: Get created wallet details
+      try {
+        const walletRes  = await fetch(
+          `https://api.circle.com/v1/w3s/wallets?userId=${encodeURIComponent(circleState.circleUserId)}`,
+          { headers: { Authorization: `Bearer ${localStorage.getItem('gr_token')}` } }
+        );
+        // Fallback: save challenge result directly
+        const walletId      = result?.data?.wallets?.[0]?.id || result?.result?.walletId || 'pending';
+        const walletAddress = result?.data?.wallets?.[0]?.address || null;
+
+        // Step 4: Save wallet ID to backend
+        await fetch(`${API}/api/auth/circle-init`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('gr_token')}`
+          },
+          body: JSON.stringify({
+            walletId,
+            walletAddress,
+            circleUserId: circleState.circleUserId
+          })
+        });
+
+        // Update local storage
+        const usr = JSON.parse(localStorage.getItem('gr_user') || '{}');
+        usr.circleWalletId      = walletId;
+        usr.circleWalletAddress = walletAddress;
+        localStorage.setItem('gr_user', JSON.stringify(usr));
+
+        showToast('🎉 Wallet created successfully!', 'ok');
+        document.getElementById('walletSetupCard').style.display = 'none';
+        loadWalletPanel();
+
+      } catch(e) {
+        showToast('Wallet created but failed to save details. Refresh.', 'info');
+      }
+    });
+
+  } catch(e) {
+    console.error('[wallet:init]', e);
+    err.textContent = 'Network error. Please retry.';
+    err.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    document.getElementById('walletSetupSpin').style.display = 'none';
+    document.getElementById('walletSetupBtnTxt').textContent = '🔐 Create My Wallet & Set PIN';
+  }
+}
+
+// ── Helper: copy wallet address ───────────────────────────
+function copyWalletAddress() {
+  const usr  = JSON.parse(localStorage.getItem('gr_user') || '{}');
+  const addr = usr.circleWalletAddress || document.getElementById('walletAddressDisplay')?.textContent;
+  if (addr && addr !== '—') {
+    navigator.clipboard.writeText(addr).then(() => showToast('📋 Address copied!', 'ok'));
+  }
+}
+
+// ── Helper: open Circle USDC faucet ──────────────────────
+function openFaucetLink() {
+  window.open('https://faucet.circle.com', '_blank');
+}
+
+// ── Helper: refresh user from /api/auth/me ────────────────
+async function refreshUserFromServer() {
+  try {
+    const res  = await fetch(`${API}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('gr_token')}` }
+    });
+    const data = await res.json();
+    if (data.user) {
+      localStorage.setItem('gr_user', JSON.stringify(data.user));
+    }
+  } catch {}
+}
+
+</script>

@@ -1,0 +1,18 @@
+{
+  "name": "gamremit-cf",
+  "version": "1.0.0",
+  "description": "| Method | Path | Auth | Description | |--------|------|------|-------------| | POST | /api/auth/register | None | Register new user | | POST | /api/auth/login | None | Login, returns JWT | | GET | /api/auth/me | User | Get current user + notifications | | PATCH | /api/auth/me | User | Update profile | | GET | /api/admin/users | Admin | List all users + stats | | PATCH | /api/admin/users/:id | Admin | Approve/block user | | GET | /api/transactions | User/Admin | Get transactions | | POST | /api/transactions | User | Submit new transfer | | PATCH | /api/transactions/:ref | User/Admin | Update status | | GET | /api/rates | None | Get exchange rates | | POST | /api/rates | Admin | Update rate/fee | | GET | /api/kyc | Admin | List all KYC submissions | | POST | /api/kyc | User | Submit KYC documents | | PATCH | /api/kyc/:id | Admin | Approve/reject KYC | | GET | /api/notifications | User | Get notifications | | PATCH | /api/notifications/read | User | Mark all as read | | GET | /api/debug | None | Check env + counts |",
+  "main": "worker.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@circle-fin/developer-controlled-wallets": "^10.3.1",
+    "tsx": "^4.22.3",
+    "typescript": "^6.0.3"
+  }
+}
