@@ -35,19 +35,12 @@ wrangler login
 
 ## Step 2 — Set Secrets in Cloudflare
 
-Run these one by one:
+Run these one by one (values are set interactively, never written to this file):
 
-```bash
 wrangler secret put UPSTASH_REDIS_REST_URL
-# paste: https:
-
 wrangler secret put UPSTASH_REDIS_REST_TOKEN
-# paste: your token from Upstash dashboard
-
 wrangler secret put JWT_SECRET
-
-wrangler secret put ADMIN_PASSWOR
-```
+wrangler secret put ADMIN_PASSWORD
 
 ---
 
