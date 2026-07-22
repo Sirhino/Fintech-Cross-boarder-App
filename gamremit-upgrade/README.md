@@ -45,10 +45,10 @@ wrangler secret put UPSTASH_REDIS_REST_TOKEN
 # paste: your token from Upstash dashboard
 
 wrangler secret put JWT_SECRET
-# paste: gr-secret-xK92mPQb-2025!
+# paste:
 
 wrangler secret put ADMIN_PASSWORD
-# paste: GamRemit@Admin2025!
+# paste: 
 ```
 
 ---
@@ -103,8 +103,8 @@ You should see:
 
 ## Admin Login
 
-Email: `admin@gamremit.com`  
-Password: whatever you set as `ADMIN_PASSWORD`
+Email: ``  
+Password: whatever you set as ``
 
 The admin account is auto-created on first request.
 
