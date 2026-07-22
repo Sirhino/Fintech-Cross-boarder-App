@@ -45,10 +45,8 @@ wrangler secret put UPSTASH_REDIS_REST_TOKEN
 # paste: your token from Upstash dashboard
 
 wrangler secret put JWT_SECRET
-# paste: gr-secret-xK92mPQb-2026!
 
-wrangler secret put ADMIN_PASSWORD
-# paste: t@Admin2025!
+wrangler secret put ADMIN_PASSWOR
 ```
 
 ---
