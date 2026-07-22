@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>
+    // Same theme-detection pattern as app.html/withdraw.html, applied
+    // synchronously so the dashboard's theme choice carries over here.
+    (function() {
+      try {
+        var saved = localStorage.getItem('gr_theme');
+        if (saved === 'light') document.documentElement.setAttribute('data-theme', 'light');
+      } catch (e) {}
+    })();
+  </script>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>GamRemit — KYC Verification</title>
+  <link rel="icon" type="image/png" href="logos/gamremit-logo.png"/>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#07090F;--s1:#0D1220;--s2:#131A2E;--s3:#1A2340;
+      --border:rgba(var(--overlay-rgb),.07);--border2:rgba(var(--overlay-rgb),.13);
+      --green:#00D48C;--blue:#1246F5;--blue2:#2A5AFF;
+      --gold:#F0A033;--red:#FF4D6A;--purple:#8B5CF6;
+      --muted:rgba(var(--overlay-rgb),.45);--dimmed:rgba(var(--overlay-rgb),.2);
+      --font:'Sora',sans-serif;--mono:'Space Mono',monospace;
+      --text:#fff;--overlay-rgb:255,255,255;
+    }
+    [data-theme="light"]{
+      --bg:#F4F6FB;--s1:#FFFFFF;--s2:#F0F2F8;--s3:#E7EAF3;
+      --border:rgba(10,14,30,.08);--border2:rgba(10,14,30,.14);
+      --muted:rgba(10,14,30,.5);--dimmed:rgba(10,14,30,.28);
+      --text:#0B0E1A;--overlay-rgb:10,14,30;
+    }
+    html{scroll-behavior:smooth}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+    .bg-fx{position:fixed;inset:0;z-index:0;pointer-events:none}
+    .bg-fx::before{content:'';position:absolute;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(18,70,245,.07),transparent 70%);top:-200px;right:-100px}
+    .bg-fx::after{content:'';position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(0,212,140,.05),transparent 70%);bottom:-200px;left:-100px}
+
+    /* HEADER */
+    .kyc-header{position:sticky;top:0;z-index:100;background:rgba(7,9,15,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 24px;height:64px;display:flex;align-items:center;justify-content:space-between}
+    .header-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+    .header-logo img{height:36px;width:auto}
+    .header-step{font-size:.8rem;font-weight:700;color:var(--muted)}
+
+    /* PROGRESS */
+    .progress-wrap{max-width:700px;margin:32px auto 0;padding:0 24px}
+    .progress-steps{display:flex;align-items:center;gap:0;margin-bottom:8px}
+    .ps{display:flex;align-items:center;flex:1}
+    .ps-circle{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:800;flex-shrink:0;transition:.3s}
+    .ps-circle.todo{background:rgba(var(--overlay-rgb),.07);border:1.5px solid var(--border2);color:var(--muted)}
+    .ps-circle.active{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;box-shadow:0 4px 16px rgba(18,70,245,.4)}
+    .ps-circle.done{background:var(--green);color:#003a20}
+    .ps-line{flex:1;height:2px;background:var(--border);margin:0 6px;transition:.3s}
+    .ps-line.done{background:var(--green)}
+    .ps-labels{display:flex;justify-content:space-between;margin-top:6px}
+    .ps-lbl{font-size:.62rem;font-weight:600;color:var(--muted);text-align:center;flex:1}
+    .ps-lbl.active{color:var(--text)}
+    .ps-lbl.done{color:var(--green)}
+    .progress-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:14px}
+    .progress-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:2px;transition:width .5s ease}
+
+    /* MAIN */
+    .kyc-main{max-width:700px;margin:0 auto;padding:28px 24px 80px}
+    .step-panel{display:none}.step-panel.active{display:block}
+    .tier-row{display:flex;align-items:center;gap:10px;padding:10px 13px;background:rgba(var(--overlay-rgb),.04);border:1.5px solid var(--border);border-radius:10px;cursor:pointer;font-size:.8rem;transition:.2s}
+    .tier-row:hover{border-color:var(--border2);background:rgba(var(--overlay-rgb),.07)}
+    .tier-row.active{border-color:var(--blue);background:rgba(18,70,245,.08)}
+    .tier-tag{font-size:.58rem;font-weight:800;padding:3px 9px;border-radius:100px;letter-spacing:.05em;white-space:nowrap}
+
+    /* CARDS */
+    .kyc-card{background:var(--s1);border:1px solid var(--border2);border-radius:20px;overflow:hidden;margin-bottom:18px}
+    .kc-hdr{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+    .kc-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+    .kc-icon.blue{background:rgba(18,70,245,.15);border:1px solid rgba(18,70,245,.25)}
+    .kc-icon.green{background:rgba(0,212,140,.1);border:1px solid rgba(0,212,140,.2)}
+    .kc-icon.gold{background:rgba(240,160,51,.12);border:1px solid rgba(240,160,51,.22)}
+    .kc-icon.purple{background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.22)}
+    .kc-title{font-size:.92rem;font-weight:800;margin-bottom:2px}
+    .kc-sub{font-size:.74rem;color:var(--muted)}
+    .kc-body{padding:20px 22px}
+
+    /* DOC TYPE SELECT */
+    .doc-types{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+    .doc-type-btn{padding:14px;background:rgba(var(--overlay-rgb),.04);border:1.5px solid var(--border2);border-radius:12px;cursor:pointer;transition:.25s;text-align:left;position:relative}
+    .doc-type-btn:hover{border-color:rgba(18,70,245,.4);background:rgba(18,70,245,.06)}
+    .doc-type-btn.selected{border-color:var(--blue);background:rgba(18,70,245,.1)}
+    .doc-type-btn.selected::after{content:'✓';position:absolute;top:10px;right:12px;font-size:.8rem;font-weight:800;color:var(--blue2)}
+    .dt-icon{font-size:1.4rem;margin-bottom:6px;display:block}
+    .dt-name{font-size:.84rem;font-weight:700;margin-bottom:2px}
+    .dt-note{font-size:.66rem;color:var(--muted);line-height:1.4}
+
+    /* UPLOAD ZONES */
+    .upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+    .upload-zone{border:2px dashed rgba(var(--overlay-rgb),.13);border-radius:14px;padding:20px 16px;text-align:center;cursor:pointer;position:relative;transition:.25s;min-height:130px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+    .upload-zone:hover{border-color:var(--blue);background:rgba(18,70,245,.05)}
+    .upload-zone.has{border-color:var(--green);background:rgba(0,212,140,.05);border-style:solid}
+    .upload-zone.err-zone{border-color:var(--red)}
+    .upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2}
+    .uz-icon{font-size:1.8rem}
+    .uz-label{font-size:.8rem;font-weight:700;color:var(--muted)}
+    .uz-hint{font-size:.64rem;color:var(--dimmed)}
+    .uz-fname{font-size:.74rem;font-weight:700;color:var(--green);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .uz-preview{width:100%;max-height:90px;object-fit:cover;border-radius:8px;margin-top:4px}
+    .upload-zone.has .uz-icon{display:none}
+    .upload-zone.has .uz-label{display:none}
+    .upload-zone.has .uz-hint{display:none}
+
+    /* SELFIE CARD */
+    .selfie-instructions{background:rgba(139,92,246,.07);border:1px solid rgba(139,92,246,.18);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+    .si-title{font-size:.82rem;font-weight:700;margin-bottom:8px;color:#c4b5fd}
+    .si-list{list-style:none;display:flex;flex-direction:column;gap:5px}
+    .si-list li{font-size:.76rem;color:var(--muted);display:flex;align-items:flex-start;gap:7px;line-height:1.5}
+    .si-list li::before{content:'•';color:#8B5CF6;flex-shrink:0;margin-top:2px}
+    .selfie-upload{border:2px dashed rgba(139,92,246,.25);border-radius:14px;padding:28px 16px;text-align:center;cursor:pointer;position:relative;transition:.25s;background:rgba(139,92,246,.04)}
+    .selfie-upload:hover{border-color:var(--purple);background:rgba(139,92,246,.08)}
+    .selfie-upload.has{border-color:var(--green);background:rgba(0,212,140,.04);border-style:solid}
+    .selfie-upload input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2}
+
+    /* FIELDS */
+    .field{margin-bottom:14px}
+    .field label{display:block;font-size:.63rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--dimmed);margin-bottom:5px}
+    .req{color:var(--gold)}
+    .field input,.field select{width:100%;padding:11px 13px;background:rgba(var(--overlay-rgb),.06);border:1.5px solid var(--border2);border-radius:10px;font-family:var(--font);font-size:.9rem;color:var(--text);outline:none;transition:.2s;-webkit-appearance:none;appearance:none}
+    .field input:focus,.field select:focus{border-color:var(--blue);background:rgba(18,70,245,.05)}
+    .field input.err{border-color:var(--red)}
+    .field select option{background:var(--s2);color:var(--text)}
+    .ferr{font-size:.68rem;color:var(--red);margin-top:4px}
+    .f2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+    /* TIPS */
+    .tip-box{padding:12px 15px;border-radius:11px;display:flex;align-items:flex-start;gap:10px;margin-bottom:14px;font-size:.78rem;line-height:1.6}
+    .tip-box.info{background:rgba(18,70,245,.07);border:1px solid rgba(18,70,245,.18);color:#8ab4ff}
+    .tip-box.warn{background:rgba(240,160,51,.07);border:1px solid rgba(240,160,51,.18);color:var(--gold)}
+    .tip-box.ok{background:rgba(0,212,140,.07);border:1px solid rgba(0,212,140,.18);color:var(--green)}
+    .tip-icon{font-size:1.1rem;flex-shrink:0;margin-top:1px}
+
+    /* REVIEW */
+    .review-grid{display:grid;gap:10px}
+    .review-item{display:flex;justify-content:space-between;padding:9px 13px;background:rgba(var(--overlay-rgb),.03);border:1px solid var(--border);border-radius:9px;font-size:.82rem}
+    .ri-key{color:var(--muted)}
+    .ri-val{font-weight:700;max-width:260px;text-align:right}
+    .thumb-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+    .thumb{border-radius:10px;overflow:hidden;border:1px solid var(--border2)}
+    .thumb img{width:100%;height:90px;object-fit:cover}
+    .thumb-label{font-size:.64rem;font-weight:700;padding:5px 8px;background:rgba(var(--overlay-rgb),.04);text-align:center;color:var(--muted)}
+
+    /* CHECKLIST */
+    .check-list{list-style:none;display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+    .check-list li{display:flex;align-items:flex-start;gap:10px;font-size:.82rem;color:rgba(var(--overlay-rgb),.7);line-height:1.55}
+    .check-list li i{font-size:1rem;flex-shrink:0;margin-top:2px}
+
+    /* BUTTONS */
+    .btn-primary{padding:13px 26px;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border:none;border-radius:11px;font-family:var(--font);font-size:.95rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 5px 20px rgba(18,70,245,.4);transition:.25s;width:100%}
+    .btn-primary:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 28px rgba(18,70,245,.5)}
+    .btn-primary:disabled{opacity:.45;cursor:not-allowed}
+    .btn-outline{padding:12px 20px;background:rgba(var(--overlay-rgb),.05);border:1.5px solid var(--border2);color:rgba(var(--overlay-rgb),.65);border-radius:11px;font-family:var(--font);font-size:.9rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:.2s;width:100%}
+    .btn-outline:hover{background:rgba(var(--overlay-rgb),.09)}
+    .btn-row{display:flex;gap:10px}
+    .spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* STATUS SCREENS */
+    .status-screen{text-align:center;padding:32px 20px}
+    .status-icon{font-size:4rem;margin-bottom:16px}
+    .status-title{font-size:1.6rem;font-weight:800;margin-bottom:8px;letter-spacing:-.03em}
+    .status-sub{font-size:.9rem;color:var(--muted);line-height:1.75;max-width:420px;margin:0 auto 24px}
+    .status-ref{background:rgba(0,212,140,.08);border:1.5px solid rgba(0,212,140,.2);border-radius:12px;padding:14px;font-size:.84rem;color:var(--green);margin-bottom:20px}
+
+    /* FORM ERROR */
+    .form-err{padding:11px 14px;background:rgba(255,77,106,.09);border:1px solid rgba(255,77,106,.22);border-radius:10px;font-size:.82rem;color:#ff7090;margin-bottom:14px;display:none}
+
+    /* TOAST */
+    .toast{position:fixed;bottom:20px;right:20px;z-index:600;padding:10px 16px;border-radius:10px;font-size:.82rem;font-weight:700;transform:translateY(60px);opacity:0;transition:.3s;max-width:280px;pointer-events:none}
+    .toast.show{transform:translateY(0);opacity:1}
+    .toast.ok{background:var(--green);color:#002a1a}
+    .toast.err{background:var(--red);color:#fff}
+
+    @media(max-width:640px){
+      .doc-types{grid-template-columns:1fr 1fr}
+      .upload-grid{grid-template-columns:1fr}
+      .f2{grid-template-columns:1fr}
+      .thumb-row{grid-template-columns:1fr 1fr}
+      .btn-row{flex-direction:column}
+    }
+  </style>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#07090F">
+  <link rel="icon" type="image/x-icon" href="/icons/favicon.ico">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+</head>
+<body>
+<div class="bg-fx"></div>
+
+<!-- HEADER -->
+<header class="kyc-header">
+  <a href="/" class="header-logo"><img src="logos/gamremit-logo.png" alt="GamRemit"/></a>
+  <div class="header-step" id="headerStep">Identity Verification</div>
+</header>
+
+<!-- PROGRESS BAR -->
+<div class="progress-wrap">
+  <div class="progress-steps">
+    <div class="ps">
+      <div class="ps-circle active" id="pc1">1</div>
+      <div class="ps-line" id="pl1"></div>
+    </div>
+    <div class="ps">
+      <div class="ps-circle todo" id="pc2">2</div>
+      <div class="ps-line" id="pl2"></div>
+    </div>
+    <div class="ps">
+      <div class="ps-circle todo" id="pc3">3</div>
+      <div class="ps-line" id="pl3"></div>
+    </div>
+    <div class="ps">
+      <div class="ps-circle todo" id="pc4">4</div>
+    </div>
+  </div>
+  <div class="ps-labels">
+    <div class="ps-lbl active" id="pl-lbl1">Document</div>
+    <div class="ps-lbl" id="pl-lbl2">Upload</div>
+    <div class="ps-lbl" id="pl-lbl3">Selfie</div>
+    <div class="ps-lbl" id="pl-lbl4">Review</div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:25%"></div></div>
+</div>
+
+<main class="kyc-main">
+  <div class="form-err" id="formErr"></div>
+
+  <!-- ── STEP 1: Select Document Type ── -->
+  <!-- ── STEP 0: KYC Tier Selection (based on intended send amount) ── -->
+  <div class="step-panel active" id="step-0">
+    <div class="kyc-card">
+      <div class="kc-hdr">
+        <div class="kc-icon blue">💸</div>
+        <div>
+          <div class="kc-title">How Much Do You Want to Send?</div>
+          <div class="kc-sub">This determines your KYC verification level</div>
+        </div>
+      </div>
+      <div class="kc-body">
+        <div class="tip-box info" style="margin-bottom:18px"><div class="tip-icon">ℹ️</div><div>GamRemit uses a tiered KYC system. Enter the approximate amount you plan to send so we can tell you exactly which documents are required.</div></div>
+
+        <div style="display:grid;grid-template-columns:1fr auto;gap:10px;margin-bottom:18px;align-items:end">
+          <div class="field" style="margin:0">
+            <label>Intended Send Amount <span class="req">*</span></label>
+            <input type="number" id="intendedAmount" placeholder="e.g. 5000" min="1" step="1" oninput="onAmountInput()" style="font-size:1.1rem;font-weight:700"/>
+          </div>
+          <div class="field" style="margin:0">
+            <label>Currency</label>
+            <select id="intendedCurrency" onchange="onAmountInput()">
+              <option value="GMD">GMD 🇬🇲</option>
+              <option value="NGN">NGN 🇳🇬</option>
+              <option value="USD">USD 🇺🇸</option>
+              <option value="USDC">USDC 💵</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Tier display card — shown after amount input -->
+        <div id="tierResultCard" style="display:none;margin-bottom:20px;border-radius:14px;overflow:hidden;border:1px solid var(--border2)">
+          <div id="tierCardHeader" style="padding:14px 18px;display:flex;align-items:center;gap:12px">
+            <div style="font-size:1.6rem" id="tierIcon">🟢</div>
+            <div>
+              <div style="font-size:.82rem;font-weight:800;letter-spacing:.03em" id="tierLabel">Tier 1 — Standard</div>
+              <div style="font-size:.72rem;margin-top:2px;opacity:.8" id="tierDesc">Standard verification for transfers from 3,000 GMD</div>
+            </div>
+            <div style="margin-left:auto;font-size:.72rem;font-weight:800;padding:4px 12px;border-radius:100px;background:rgba(var(--overlay-rgb),.1)" id="tierBadge">TIER 1</div>
+          </div>
+          <div style="padding:14px 18px;background:rgba(0,0,0,.2)">
+            <div style="font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:10px">Required Documents</div>
+            <div id="tierDocsList" style="display:flex;flex-direction:column;gap:6px"></div>
+            <div id="tierExtraList" style="margin-top:10px;display:none">
+              <div style="font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:8px">Additional Requirements</div>
+              <div id="tierExtraItems" style="display:flex;flex-direction:column;gap:5px"></div>
+            </div>
+            <div style="margin-top:12px;padding:10px;background:rgba(var(--overlay-rgb),.04);border-radius:8px;font-size:.72rem;color:var(--muted);line-height:1.6">
+              📊 <strong style="color:var(--text)">Daily limit:</strong> <span id="tierDailyLimit">—</span> &nbsp;·&nbsp;
+              📅 <strong style="color:var(--text)">Monthly limit:</strong> <span id="tierMonthlyLimit">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- All tiers overview -->
+        <div style="margin-bottom:18px">
+          <div style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">All KYC Tiers</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div class="tier-row" onclick="selectTierManually(0)" id="tier-row-0">
+              <span>🔵</span><span style="flex:1"><strong>Basic</strong> — up to 2,999 GMD</span><span class="tier-tag" style="background:rgba(138,180,255,.12);color:#8ab4ff">BASIC</span>
+            </div>
+            <div class="tier-row" onclick="selectTierManually(1)" id="tier-row-1">
+              <span>🟢</span><span style="flex:1"><strong>Tier 1</strong> — 3,000–4,999 GMD</span><span class="tier-tag" style="background:rgba(0,212,140,.1);color:#00D48C">TIER 1</span>
+            </div>
+            <div class="tier-row" onclick="selectTierManually(2)" id="tier-row-2">
+              <span>🟡</span><span style="flex:1"><strong>Tier 2</strong> — 5,000–9,999 GMD</span><span class="tier-tag" style="background:rgba(240,160,51,.12);color:#F0A033">TIER 2</span>
+            </div>
+            <div class="tier-row" onclick="selectTierManually(3)" id="tier-row-3">
+              <span>🟣</span><span style="flex:1"><strong>Tier 3</strong> — 10,000–14,999 GMD</span><span class="tier-tag" style="background:rgba(192,132,252,.12);color:#C084FC">TIER 3</span>
+            </div>
+            <div class="tier-row" onclick="selectTierManually(4)" id="tier-row-4">
+              <span>⭐</span><span style="flex:1"><strong>Elite (Tier 4)</strong> — 15,000+ GMD</span><span class="tier-tag" style="background:rgba(240,160,51,.15);color:#F0A033">ELITE</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="ferr" id="tierErr" style="margin-bottom:10px"></div>
+        <button class="btn-primary" onclick="confirmTierAndContinue()">Continue → Select Document Type</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="step-panel" id="step-1">
+    <div class="kyc-card">
+      <div class="kc-hdr">
+        <div class="kc-icon blue">📋</div>
+        <div>
+          <div class="kc-title">Select Document Type</div>
+          <div class="kc-sub">Choose one valid government-issued ID</div>
+        </div>
+      </div>
+      <div class="kc-body">
+        <div class="tip-box info"><div class="tip-icon">ℹ️</div><div>Your documents are encrypted and stored securely. They are only used for identity verification and never shared with third parties.</div></div>
+        <div class="doc-types">
+          <div class="doc-type-btn" id="dt-passport" onclick="selectDocType('passport')">
+            <span class="dt-icon">🛂</span>
+            <div class="dt-name">Passport</div>
+            <div class="dt-note">International biometric passport (any country)</div>
+          </div>
+          <div class="doc-type-btn" id="dt-national_id" onclick="selectDocType('national_id')">
+            <span class="dt-icon">🪪</span>
+            <div class="dt-name">National ID Card</div>
+            <div class="dt-note">Government-issued national identity card</div>
+          </div>
+          <div class="doc-type-btn" id="dt-resident_permit" onclick="selectDocType('resident_permit')">
+            <span class="dt-icon">📋</span>
+            <div class="dt-name">Resident Permit</div>
+            <div class="dt-note">Valid residence permit or visa</div>
+          </div>
+          <div class="doc-type-btn" id="dt-bank_statement" onclick="selectDocType('bank_statement')">
+            <span class="dt-icon">🏦</span>
+            <div class="dt-name">Bank Statement</div>
+            <div class="dt-note">Must be no older than 3 months</div>
+          </div>
+        </div>
+        <div id="docTypeErr" class="ferr" style="margin-bottom:10px"></div>
+
+        <div class="f2">
+          <div class="field">
+            <label id="expiryLabel">Expiry Date <span class="req">*</span></label>
+            <input type="date" id="expiryDate"/>
+            <div class="ferr" id="expiryErr"></div>
+          </div>
+          <div class="field">
+            <label>Document Number <span style="color:var(--muted);font-size:.6rem">(optional)</span></label>
+            <input type="text" id="docNumber" placeholder="e.g. A12345678"/>
+          </div>
+        </div>
+        <button class="btn-primary" onclick="goStep(2)">Continue → Upload Documents</button>
+        <button onclick="goStep(0)" style="margin-top:8px;width:100%;padding:11px;background:rgba(var(--overlay-rgb),.06);border:1px solid var(--border2);border-radius:10px;font-family:var(--font);font-size:.85rem;font-weight:600;color:rgba(var(--overlay-rgb),.6);cursor:pointer">← Back to Amount Selection</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STEP 2: Upload Documents ── -->
+  <div class="step-panel" id="step-2">
+    <div class="kyc-card">
+      <div class="kc-hdr">
+        <div class="kc-icon green">📁</div>
+        <div>
+          <div class="kc-title">Upload Document Images</div>
+          <div class="kc-sub" id="uploadSubLabel">Upload clear photos of your document</div>
+        </div>
+      </div>
+      <div class="kc-body">
+        <div class="tip-box warn"><div class="tip-icon">⚠️</div><div>Ensure all text is clearly visible, images are well-lit, not blurry, and not cropped. Max file size: 5MB each.</div></div>
+
+        <div class="upload-grid" id="uploadGrid">
+          <!-- Front -->
+          <div>
+            <div style="font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--dimmed);margin-bottom:7px">Front Side <span class="req">*</span></div>
+            <div class="upload-zone" id="uz-front">
+              <input type="file" accept="image/*" onchange="handleUpload('front',this)"/>
+              <div class="uz-icon">📄</div>
+              <div class="uz-label">Click to upload front</div>
+              <div class="uz-hint">JPG · PNG · WebP</div>
+              <div class="uz-fname" id="fn-front" style="display:none"></div>
+              <img class="uz-preview" id="prev-front" style="display:none"/>
+            </div>
+            <div class="ferr" id="err-front"></div>
+          </div>
+          <!-- Back -->
+          <div id="backWrap">
+            <div style="font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--dimmed);margin-bottom:7px" id="backLabel">Back Side <span style="color:var(--muted);font-size:.6rem">(if applicable)</span></div>
+            <div class="upload-zone" id="uz-back">
+              <input type="file" accept="image/*" onchange="handleUpload('back',this)"/>
+              <div class="uz-icon">📄</div>
+              <div class="uz-label">Click to upload back</div>
+              <div class="uz-hint">JPG · PNG · WebP</div>
+              <div class="uz-fname" id="fn-back" style="display:none"></div>
+              <img class="uz-preview" id="prev-back" style="display:none"/>
+            </div>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn-outline" onclick="goStep(1)">← Back</button>
+          <button class="btn-primary" onclick="goStep(3)">Continue → Take Selfie</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STEP 3: Selfie ── -->
+  <div class="step-panel" id="step-3">
+    <div class="kyc-card">
+      <div class="kc-hdr">
+        <div class="kc-icon purple">🤳</div>
+        <div>
+          <div class="kc-title">Selfie with Document</div>
+          <div class="kc-sub">Take or upload a photo of yourself holding your document</div>
+        </div>
+      </div>
+      <div class="kc-body">
+        <div class="selfie-instructions">
+          <div class="si-title">📸 How to take a good selfie</div>
+          <ul class="si-list">
+            <li>Hold your document next to your face, clearly visible</li>
+            <li>Make sure your full face and the document are in the same photo</li>
+            <li>Ensure good lighting — no shadows on your face</li>
+            <li>Look directly at the camera with a neutral expression</li>
+            <li>Do not use glasses, hats or masks that obscure your face</li>
+            <li>The document text must be readable in the photo</li>
+          </ul>
+        </div>
+        <div class="selfie-upload" id="uz-selfie" style="cursor:default" onclick="event.target.tagName==='INPUT'?null:openSelfieCamera()">
+          <div class="uz-icon" style="font-size:2.2rem">🤳</div>
+          <div class="uz-label" id="selfieLabel" style="color:var(--muted);font-size:.85rem;font-weight:700;margin-top:6px">Opening camera…</div>
+          <div class="uz-hint" style="font-size:.68rem;color:var(--dimmed);margin-top:3px">Or <label for="selfieFileInput" onclick="event.stopPropagation()" style="color:#8ab4ff;text-decoration:underline;cursor:pointer">upload a photo instead</label></div>
+          <input type="file" id="selfieFileInput" accept="image/*" capture="user" onchange="handleUpload('selfie',this)" style="position:static;opacity:0;width:0;height:0"/>
+          <div class="uz-fname" id="fn-selfie" style="display:none"></div>
+          <img class="uz-preview" id="prev-selfie" style="max-height:160px;display:none;border-radius:10px;margin-top:8px"/>
+          <button type="button" id="retakeSelfieBtn" onclick="event.stopPropagation();openSelfieCamera()" style="display:none;margin-top:10px;padding:7px 16px;background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.25);border-radius:9px;color:#c4b5fd;font-size:.78rem;font-weight:700;cursor:pointer">🔄 Retake</button>
+        </div>
+        <div class="ferr" id="err-selfie" style="margin:6px 0"></div>
+
+        <div class="btn-row" style="margin-top:16px">
+          <button class="btn-outline" onclick="goStep(2)">← Back</button>
+          <button class="btn-primary" onclick="goStep(4)">Continue → Review</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STEP 4: Review & Submit ── -->
+  <div class="step-panel" id="step-4">
+    <div class="kyc-card">
+      <div class="kc-hdr">
+        <div class="kc-icon gold">✅</div>
+        <div>
+          <div class="kc-title">Review & Submit</div>
+          <div class="kc-sub">Check your information before submitting</div>
+        </div>
+      </div>
+      <div class="kc-body">
+        <div class="review-grid" id="reviewGrid"></div>
+        <div class="thumb-row" id="thumbRow"></div>
+
+        <div class="tip-box ok" style="margin-top:14px"><div class="tip-icon">🔒</div><div>Your documents are encrypted in transit and at rest. Our team will review within 24 hours and notify you by email.</div></div>
+
+        <ul class="check-list" style="margin-top:4px">
+          <li><span style="color:var(--green)">✓</span> All text in my documents is clearly readable</li>
+          <li><span style="color:var(--green)">✓</span> My face and document are both visible in the selfie</li>
+          <li><span style="color:var(--green)">✓</span> The information above is correct and matches my documents</li>
+        </ul>
+
+        <div class="btn-row">
+          <button class="btn-outline" onclick="goStep(3)">← Back</button>
+          <button class="btn-primary" id="submitBtn" onclick="submitKyc()">
+            <div class="spin" id="subSpin"></div>
+            <span id="subTxt">Submit KYC Verification</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SUCCESS SCREEN ── -->
+  <div class="step-panel" id="step-success">
+    <div class="kyc-card">
+      <div class="kc-body">
+        <div class="status-screen">
+          <div class="status-icon">🎉</div>
+          <div class="status-title" style="color:var(--green)">KYC Submitted!</div>
+          <div class="status-sub">Your documents are under review. You'll receive an email and in-app notification once verified — usually within 24 hours.</div>
+          <div class="status-ref">📧 Check your email for a confirmation from GamRemit</div>
+          <div style="background:rgba(18,70,245,.08);border:1px solid rgba(18,70,245,.2);border-radius:12px;padding:13px 16px;margin:14px 0;font-size:.82rem;color:#8ab4ff;text-align:left">
+            🏦 Your USDC wallet on Arc Testnet has been created and is ready. You'll be able to send and receive once your KYC is approved.
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <a href="/app" class="btn-primary" style="text-decoration:none">View Dashboard (Pending Approval) →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ALREADY APPROVED SCREEN ── -->
+  <div class="step-panel" id="step-approved">
+    <div class="kyc-card">
+      <div class="kc-body">
+        <div class="status-screen">
+          <div class="status-icon">✅</div>
+          <div class="status-title" style="color:var(--green)" id="approvedTitle">Already Verified!</div>
+          <div class="status-sub" id="approvedSub">Your identity has been successfully verified. Your account is fully active.</div>
+          <button class="btn-primary" id="upgradeBtn" onclick="showAllSteps()" style="display:none;margin-bottom:10px">Upgrade to a higher tier →</button>
+          <a href="/app" class="btn-primary" style="text-decoration:none;display:block">Go to Dashboard →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── REJECTED SCREEN ── -->
+  <div class="step-panel" id="step-rejected">
+    <div class="kyc-card">
+      <div class="kc-body">
+        <div class="status-screen">
+          <div class="status-icon">❌</div>
+          <div class="status-title" style="color:var(--red)">KYC Rejected</div>
+          <div class="status-sub">Your previous submission was not approved. Please review the reason below and resubmit.</div>
+          <div style="background:rgba(255,77,106,.09);border:1px solid rgba(255,77,106,.22);border-radius:12px;padding:14px 16px;margin-bottom:20px;font-size:.85rem;color:#ff7090;text-align:left" id="rejectionReasonBox"></div>
+          <button class="btn-primary" onclick="showAllSteps()">Resubmit KYC →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+const API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? `${location.protocol}//${location.hostname}:${location.port}` : '';
+
+const token = localStorage.getItem('gr_token');
+if (!token) { window.location.href = '/index.html'; throw new Error('no token'); }
+
+let currentStep = 1;
+let docType = null;
+let uploads = { front: null, back: null, selfie: null };
+let uploadNames = { front: null, back: null, selfie: null };
+
+// ── INIT: check existing KYC status ──────────────────────────────
+async function init() {
+  try {
+    const res = await fetch(`${API}/api/kyc/me`, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    if (data.kyc) {
+      if (data.kyc.status === 'approved') {
+        const tierLevel = data.kyc.approvedTierLevel ?? 0;
+        const tierNames = { 0:'Basic', 1:'Tier 1 — Standard', 2:'Tier 2 — Enhanced', 3:'Tier 3', 4:'Elite' };
+        document.getElementById('approvedSub').textContent =
+          `You're verified at ${tierNames[tierLevel] || 'Basic'}. Your account is fully active.`;
+        if (tierLevel < 4) {
+          document.getElementById('upgradeBtn').style.display = 'block';
+        }
+        showOnly('step-approved');
+        return;
+      }
+      if (data.kyc.status === 'pending') {
+        showOnly('step-success'); return;
+      }
+      if (data.kyc.status === 'rejected') {
+        document.getElementById('rejectionReasonBox').textContent =
+          `Reason: ${data.kyc.rejectionReason || 'Not specified'}`;
+        showOnly('step-rejected'); return;
+      }
+    }
+  } catch {}
+  // No KYC yet — show the normal flow
+  updateProgress(1);
+}
+
+function showOnly(id) {
+  document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const stepProgress = { 'step-0':'0%','step-1':'20%','step-2':'40%','step-3':'60%','step-4':'80%','step-success':'100%','step-approved':'100%','step-rejected':'100%' };
+  document.getElementById('progressFill').style.width = stepProgress[id] || '0%';
+  document.getElementById('headerStep').textContent = 'Identity Verification';
+}
+
+function showAllSteps() {
+  showOnly('step-0');
+  updateProgress(1);
+}
+
+// ── STEP NAVIGATION ───────────────────────────────────────────────
+function goStep(step) {
+  if (step > currentStep && !validateStep(currentStep)) return;
+  document.getElementById(`step-${currentStep}`)?.classList.remove('active');
+  currentStep = step;
+  const el = document.getElementById(`step-${step}`);
+  if (el) { el.classList.add('active'); el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  updateProgress(step);
+  if (step === 4) buildReview();
+  if (step === 3 && !uploads.selfie) openSelfieCamera();
+}
+
+function updateProgress(step) {
+  const pcts = { 1: 25, 2: 50, 3: 75, 4: 100 };
+  document.getElementById('progressFill').style.width = (pcts[step] || 25) + '%';
+  const labels = ['Document', 'Upload', 'Selfie', 'Review'];
+  for (let i = 1; i <= 4; i++) {
+    const circle = document.getElementById(`pc${i}`);
+    const lbl = document.getElementById(`pl-lbl${i}`);
+    const line = document.getElementById(`pl${i}`);
+    circle.className = 'ps-circle ' + (i < step ? 'done' : i === step ? 'active' : 'todo');
+    circle.textContent = i < step ? '✓' : i;
+    if (lbl) lbl.className = 'ps-lbl ' + (i < step ? 'done' : i === step ? 'active' : '');
+    if (line) line.className = 'ps-line ' + (i < step ? 'done' : '');
+  }
+  const stepNames = { 1: 'Step 1 — Document Type', 2: 'Step 2 — Upload Documents', 3: 'Step 3 — Selfie', 4: 'Step 4 — Review & Submit' };
+  document.getElementById('headerStep').textContent = stepNames[step] || 'KYC Verification';
+}
+
+// ── DOC TYPE SELECTION ─────────────────────────────────────────────
+function selectDocType(type) {
+  docType = type;
+  document.querySelectorAll('.doc-type-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById(`dt-${type}`)?.classList.add('selected');
+  document.getElementById('docTypeErr').textContent = '';
+
+  // Update labels for bank statement
+  if (type === 'bank_statement') {
+    document.getElementById('expiryLabel').innerHTML = 'Statement Issue Date <span class="req">*</span>';
+    document.getElementById('backWrap').style.display = 'none';
+    document.querySelector('#uploadGrid').style.gridTemplateColumns = '1fr';
+    document.getElementById('uploadSubLabel').textContent = 'Upload your bank statement (PDF page as image)';
+  } else {
+    document.getElementById('expiryLabel').innerHTML = 'Expiry Date <span class="req">*</span>';
+    document.getElementById('backWrap').style.display = 'block';
+    document.querySelector('#uploadGrid').style.gridTemplateColumns = '1fr 1fr';
+    const labels = { passport: 'Upload passport photo page (front)', national_id: 'Upload both sides of your ID', resident_permit: 'Upload your permit document' };
+    document.getElementById('uploadSubLabel').textContent = labels[type] || 'Upload clear photos of your document';
+  }
+}
+
+// ── SELFIE CAMERA (auto-opens on step 3) ────────────────────────────
+let selfieStream = null;
+
+async function openSelfieCamera() {
+  const modal = document.getElementById('selfieCamModal');
+  const errEl = document.getElementById('selfieCamErr');
+  errEl.style.display = 'none';
+  modal.style.display = 'flex';
+
+  if (!navigator.mediaDevices?.getUserMedia) {
+    errEl.textContent = 'Camera not supported on this browser — use "upload a photo instead" below.';
+    errEl.style.display = 'block';
+    document.getElementById('captureSelfieBtn').disabled = true;
+    return;
+  }
+
+  try {
+    selfieStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+  } catch (e) {
+    errEl.textContent = 'Camera access denied. Allow camera permission, or use "upload a photo instead" below.';
+    errEl.style.display = 'block';
+    document.getElementById('captureSelfieBtn').disabled = true;
+    return;
+  }
+  document.getElementById('captureSelfieBtn').disabled = false;
+  const video = document.getElementById('selfieVideo');
+  video.srcObject = selfieStream;
+  await video.play();
+}
+
+function captureSelfie() {
+  const video = document.getElementById('selfieVideo');
+  const canvas = document.getElementById('selfieCanvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+  // Mirror horizontally so the saved photo matches what the user saw
+  // (the preview video is mirrored for a natural "looking in a mirror" feel).
+  ctx.translate(canvas.width, 0);
+  ctx.scale(-1, 1);
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+  uploads.selfie = dataUrl;
+  uploadNames.selfie = 'selfie-camera.jpg';
+  const zone = document.getElementById('uz-selfie');
+  if (zone) zone.classList.add('has');
+  const fname = document.getElementById('fn-selfie');
+  if (fname) { fname.textContent = 'Selfie captured ✓'; fname.style.display = 'block'; }
+  const prev = document.getElementById('prev-selfie');
+  if (prev) { prev.src = dataUrl; prev.style.display = 'block'; }
+  const label = document.getElementById('selfieLabel');
+  if (label) label.textContent = 'Selfie captured';
+  document.getElementById('retakeSelfieBtn').style.display = 'inline-block';
+  document.getElementById('err-selfie').textContent = '';
+
+  closeSelfieCamera();
+}
+
+function closeSelfieCamera() {
+  document.getElementById('selfieCamModal').style.display = 'none';
+  if (selfieStream) { selfieStream.getTracks().forEach(t => t.stop()); selfieStream = null; }
+  const video = document.getElementById('selfieVideo');
+  if (video) video.srcObject = null;
+  // If camera never produced a selfie (denied/unsupported), make sure the
+  // fallback file-upload option is clearly visible instead of a dead "Opening camera…" label.
+  if (!uploads.selfie) {
+    const label = document.getElementById('selfieLabel');
+    if (label) label.textContent = 'Camera unavailable — upload a photo below';
+  }
+}
+
+// ── FILE UPLOAD ────────────────────────────────────────────────────
+function handleUpload(side, input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById(`err-${side}`)?.innerText && (document.getElementById(`err-${side}`).textContent = '');
+  if (file.size > 5 * 1024 * 1024) {
+    if (document.getElementById(`err-${side}`)) document.getElementById(`err-${side}`).textContent = 'Max 5MB';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    uploads[side] = ev.target.result;
+    uploadNames[side] = file.name;
+    const zone = document.getElementById(`uz-${side}`);
+    if (zone) zone.classList.add('has');
+    const fname = document.getElementById(`fn-${side}`);
+    if (fname) { fname.textContent = file.name; fname.style.display = 'block'; }
+    const prev = document.getElementById(`prev-${side}`);
+    if (prev) { prev.src = ev.target.result; prev.style.display = 'block'; }
+    if (side === 'selfie') {
+      const label = document.getElementById('selfieLabel');
+      if (label) label.textContent = 'Selfie uploaded';
+      document.getElementById('retakeSelfieBtn').style.display = 'inline-block';
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── VALIDATION ────────────────────────────────────────────────────
+function validateStep(step) {
+  hideErr();
+  if (step === 0) {
+    const amount = parseFloat(document.getElementById('intendedAmount')?.value) || 0;
+    if (amount <= 0) {
+      const el = document.getElementById('tierErr');
+      if (el) { el.textContent = 'Please enter your intended send amount'; el.style.display = 'block'; }
+      return false;
+    }
+    return true;
+  }
+  if (step === 1) {
+    if (!docType) { document.getElementById('docTypeErr').textContent = 'Please select a document type'; return false; }
+    const expiry = document.getElementById('expiryDate').value;
+    if (!expiry) { document.getElementById('expiryErr').textContent = 'Date required'; return false; }
+    if (docType === 'bank_statement') {
+      const d = new Date(expiry), threeMoAgo = new Date();
+      threeMoAgo.setMonth(threeMoAgo.getMonth() - 3);
+      if (d < threeMoAgo) { document.getElementById('expiryErr').textContent = 'Statement must be within the last 3 months'; return false; }
+    } else {
+      if (new Date(expiry) < new Date()) { document.getElementById('expiryErr').textContent = 'Document appears to be expired'; return false; }
+    }
+    document.getElementById('expiryErr').textContent = '';
+    return true;
+  }
+  if (step === 2) {
+    if (!uploads.front) { document.getElementById('err-front').textContent = 'Front image required'; return false; }
+    return true;
+  }
+  if (step === 3) {
+    if (!uploads.selfie) { document.getElementById('err-selfie').textContent = 'Selfie required'; return false; }
+    return true;
+  }
+  return true;
+}
+
+// ── BUILD REVIEW ──────────────────────────────────────────────────
+function buildReview() {
+  const docLabels = { passport: '🛂 Passport', national_id: '🪪 National ID', resident_permit: '📋 Resident Permit', bank_statement: '🏦 Bank Statement' };
+  const expiry = document.getElementById('expiryDate').value;
+  const docNum = document.getElementById('docNumber').value;
+  const user = JSON.parse(localStorage.getItem('gr_user') || '{}');
+  document.getElementById('reviewGrid').innerHTML = [
+    ['Full Name', `${user.firstName || ''} ${user.lastName || ''}`.trim() || '—'],
+    ['Document Type', docLabels[docType] || docType],
+    ['Document Number', docNum || 'Not provided'],
+    [docType === 'bank_statement' ? 'Issue Date' : 'Expiry Date', expiry || '—'],
+    ['Front Image', uploads.front ? '✅ Uploaded' : '❌ Missing'],
+    ['Back Image', uploads.back ? '✅ Uploaded' : 'Not provided'],
+    ['Selfie', uploads.selfie ? '✅ Uploaded' : '❌ Missing'],
+  ].map(([k, v]) => `<div class="review-item"><span class="ri-key">${k}</span><span class="ri-val">${v}</span></div>`).join('');
+
+  const thumbs = [
+    { label: 'Front', src: uploads.front },
+    { label: 'Back', src: uploads.back },
+    { label: 'Selfie', src: uploads.selfie }
+  ].filter(t => t.src);
+  document.getElementById('thumbRow').innerHTML = thumbs.map(t => `
+    <div class="thumb">
+      <img src="${t.src}" alt="${t.label}"/>
+      <div class="thumb-label">${t.label}</div>
+    </div>`).join('');
+}
+
+// ── SUBMIT ─────────────────────────────────────────────────────────
+
+async function compressImage(dataUrl, maxWidth = 400, quality = 0.4) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let w = img.width, h = img.height;
+      if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+async function submitKyc() {
+  const btn = document.getElementById('submitBtn');
+  const spin = document.getElementById('subSpin');
+  const txt = document.getElementById('subTxt');
+  btn.disabled = true; spin.style.display = 'block'; txt.textContent = 'Submitting...';
+  try {
+    const [cf, cb, cs] = await Promise.all([uploads.front ? compressImage(uploads.front, 300, 0.3) : Promise.resolve(null), uploads.back ? compressImage(uploads.back, 300, 0.3) : Promise.resolve(null), uploads.selfie ? compressImage(uploads.selfie, 300, 0.3) : Promise.resolve(null)]);
+    const res = await fetch(`${API}/api/kyc`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        docType,
+        docNumber: document.getElementById('docNumber').value || null,
+        expiryDate: document.getElementById('expiryDate').value,
+        docFront: cf,
+        docBack: cb || null,
+        selfie: cs,
+        intendedAmount:   parseFloat(document.getElementById('intendedAmount')?.value) || 0,
+        intendedCurrency: document.getElementById('intendedCurrency')?.value || 'GMD',
+      })
+    });
+    const data = await res.json();
+    if (data.kyc || data.success) {
+      document.getElementById(`step-${currentStep}`).classList.remove('active');
+      showOnly('step-success');
+      // Update cached user kycStatus
+      const u = JSON.parse(localStorage.getItem('gr_user') || '{}');
+      u.kycStatus = 'pending';
+      localStorage.setItem('gr_user', JSON.stringify(u));
+    } else {
+      showFormErr(data.error || 'Submission failed. Please retry.');
+      document.getElementById('submitBtn').disabled = false;
+      document.getElementById('subSpin').style.display = 'none';
+      document.getElementById('subTxt').textContent = 'Submit KYC Verification';
+    }
+  } catch { showFormErr('Network error. Please check your connection and retry.'); }
+  finally { btn.disabled = false; spin.style.display = 'none'; txt.textContent = 'Submit KYC Verification'; }
+}
+
+function showFormErr(msg) {
+  const el = document.getElementById('formErr');
+  el.textContent = msg; el.style.display = 'block';
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+function hideErr() { document.getElementById('formErr').style.display = 'none'; }
+function showToast(msg, type) { const t = document.getElementById('toast'); t.textContent = msg; t.className = `toast ${type} show`; setTimeout(() => t.className = 'toast', 3500); }
+
+// ═════════════════════════════════════════════
+// KYC TIER SYSTEM
+// ═════════════════════════════════════════════
+const KYC_TIERS_CLIENT = [
+  { tier:0, label:'Basic',              color:'#8ab4ff', icon:'🔵', minGMD:0,     maxGMD:2999,     description:'Basic account — small transfers',                       requiredDocs:['National ID','Passport'],                                                            extraRequirements:[],                                                                   dailyLimitGMD:2999,     monthlyLimitGMD:9999 },
+  { tier:1, label:'Tier 1 — Standard', color:'#00D48C', icon:'🟢', minGMD:3000,  maxGMD:4999,     description:'Standard verification for transfers from 3,000 GMD',   requiredDocs:['National ID or Passport','Resident Permit'],                                 extraRequirements:['Selfie with ID','Proof of address'],                         dailyLimitGMD:4999,     monthlyLimitGMD:49999 },
+  { tier:2, label:'Tier 2 — Enhanced', color:'#F0A033', icon:'🟡', minGMD:5000,  maxGMD:9999,     description:'Enhanced verification for transfers from 5,000 GMD',   requiredDocs:['National ID or Passport','Resident Permit','Bank Statement (3 months)'],  extraRequirements:['Selfie with ID','Proof of address','Source of funds'],       dailyLimitGMD:9999,     monthlyLimitGMD:149999 },
+  { tier:3, label:'Tier 3 — Advanced', color:'#C084FC', icon:'🟣', minGMD:10000, maxGMD:14999,    description:'Advanced verification for transfers from 10,000 GMD',  requiredDocs:['Passport','Bank Statement (3 months)','Utility Bill'],               extraRequirements:['Selfie with ID','Proof of address','Source of funds','Employment proof'], dailyLimitGMD:14999, monthlyLimitGMD:299999 },
+  { tier:4, label:'Tier 4 — Elite',    color:'#F0A033', icon:'⭐', minGMD:15000, maxGMD:Infinity, description:'Elite verification for transfers of 15,000 GMD+',        requiredDocs:['Passport','Bank Statement','Utility Bill','National ID'],            extraRequirements:['Selfie with ID','Proof of address','Source of funds','Employment proof','Video call with agent'], dailyLimitGMD:Infinity, monthlyLimitGMD:Infinity },
+];
+
+let selectedTierLevel = 0;
+
+function getKycTierForAmount(amtGMD) {
+  return KYC_TIERS_CLIENT.find(t => amtGMD >= t.minGMD && amtGMD <= t.maxGMD) || KYC_TIERS_CLIENT[0];
+}
+
+function toGMD(amount, currency) {
+  const rates = { GMD:1, NGN:0.0806, USD:61.5, USDC:61.73 };
+  return amount * (rates[currency] || 1);
+}
+
+function onAmountInput() {
+  const amount   = parseFloat(document.getElementById('intendedAmount').value) || 0;
+  const currency = document.getElementById('intendedCurrency').value;
+  if (amount <= 0) { document.getElementById('tierResultCard').style.display = 'none'; return; }
+  const amtGMD = toGMD(amount, currency);
+  renderTierCard(getKycTierForAmount(amtGMD));
+}
+
+function selectTierManually(tierNum) {
+  const tier = KYC_TIERS_CLIENT[tierNum];
+  document.querySelectorAll('.tier-row').forEach(r => r.classList.remove('active'));
+  document.getElementById(`tier-row-${tierNum}`)?.classList.add('active');
+  renderTierCard(tier);
+  // Set a representative amount in the input
+  if (tierNum === 0) document.getElementById('intendedAmount').value = 1000;
+  if (tierNum === 1) document.getElementById('intendedAmount').value = 3000;
+  if (tierNum === 2) document.getElementById('intendedAmount').value = 5000;
+  if (tierNum === 3) document.getElementById('intendedAmount').value = 10000;
+  if (tierNum === 4) document.getElementById('intendedAmount').value = 15000;
+  document.getElementById('intendedCurrency').value = 'GMD';
+}
+
+function renderTierCard(tier) {
+  selectedTierLevel = tier.tier;
+
+  const card   = document.getElementById('tierResultCard');
+  const header = document.getElementById('tierCardHeader');
+  card.style.display = 'block';
+  header.style.background = `linear-gradient(135deg, ${tier.color}18, ${tier.color}08)`;
+  header.style.borderBottom = `1px solid ${tier.color}30`;
+  document.getElementById('tierIcon').textContent  = tier.icon;
+  document.getElementById('tierLabel').textContent = tier.label;
+  document.getElementById('tierDesc').textContent  = tier.description;
+  document.getElementById('tierBadge').textContent = tier.tier === 0 ? 'BASIC' : `TIER ${tier.tier}`;
+  document.getElementById('tierBadge').style.color = tier.color;
+
+  // Docs list
+  const docsList = document.getElementById('tierDocsList');
+  docsList.innerHTML = tier.requiredDocs.map(d =>
+    `<div style="display:flex;align-items:center;gap:8px;font-size:.78rem;padding:5px 0;border-bottom:1px solid rgba(var(--overlay-rgb),.05)"><span style="color:${tier.color}">✓</span> ${d}</div>`
+  ).join('');
+
+  // Extra requirements
+  const extraList = document.getElementById('tierExtraList');
+  if (tier.extraRequirements.length) {
+    extraList.style.display = 'block';
+    document.getElementById('tierExtraItems').innerHTML = tier.extraRequirements.map(e =>
+      `<div style="display:flex;align-items:center;gap:8px;font-size:.75rem;padding:4px 0;color:rgba(var(--overlay-rgb),.65)"><span>→</span> ${e}</div>`
+    ).join('');
+  } else {
+    extraList.style.display = 'none';
+  }
+
+  // Limits
+  const fmt = v => v === Infinity ? 'Unlimited' : v.toLocaleString() + ' GMD';
+  document.getElementById('tierDailyLimit').textContent   = fmt(tier.dailyLimitGMD);
+  document.getElementById('tierMonthlyLimit').textContent = fmt(tier.monthlyLimitGMD);
+
+  // Highlight tier row
+  document.querySelectorAll('.tier-row').forEach(r => r.classList.remove('active'));
+  document.getElementById(`tier-row-${tier.tier}`)?.classList.add('active');
+}
+
+function confirmTierAndContinue() {
+  const amount = parseFloat(document.getElementById('intendedAmount').value) || 0;
+  if (amount <= 0) {
+    const el = document.getElementById('tierErr');
+    el.textContent = 'Please enter the amount you intend to send';
+    el.style.display = 'block';
+    return;
+  }
+  document.getElementById('tierErr').style.display = 'none';
+  // Show Tier 4 extra notice
+  if (selectedTierLevel === 4) {
+    const ok = confirm('⭐ Elite Tier (15,000+ GMD) requires a video call with a GamRemit agent after document submission. Our team will contact you within 48 hours. Continue?');
+    if (!ok) return;
+  }
+  goStep(1); // proceed to document type selection
+}
+
+
+init();
+</script>
+<!-- SELFIE CAMERA MODAL -->
+<div id="selfieCamModal" style="position:fixed;inset:0;background:rgba(7,9,15,.92);backdrop-filter:blur(8px);z-index:9999;display:none;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--s1);border:1px solid var(--border2);border-radius:18px;padding:22px;max-width:420px;width:100%">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div style="font-weight:800;font-size:1.02rem">🤳 Take your selfie</div>
+      <button onclick="closeSelfieCamera()" style="background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;line-height:1">×</button>
+    </div>
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:12px">Hold your document next to your face, then tap capture.</div>
+    <div style="position:relative;border-radius:14px;overflow:hidden;background:#000;aspect-ratio:3/4">
+      <video id="selfieVideo" style="width:100%;height:100%;object-fit:cover;display:block;transform:scaleX(-1)" playsinline muted></video>
+      <canvas id="selfieCanvas" style="display:none"></canvas>
+    </div>
+    <div id="selfieCamErr" style="color:var(--red);font-size:.78rem;margin-top:10px;display:none"></div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button onclick="closeSelfieCamera()" style="flex:1;padding:12px;background:rgba(var(--overlay-rgb),.05);border:1px solid var(--border2);border-radius:10px;color:rgba(var(--overlay-rgb),.7);font-family:var(--font);font-size:.85rem;font-weight:600;cursor:pointer">Cancel</button>
+      <button id="captureSelfieBtn" onclick="captureSelfie()" style="flex:2;padding:12px;background:linear-gradient(135deg,var(--purple),#6D28D9);border:none;border-radius:10px;color:#fff;font-family:var(--font);font-size:.85rem;font-weight:700;cursor:pointer">📸 Capture</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
