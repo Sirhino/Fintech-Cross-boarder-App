@@ -1,0 +1,45 @@
+{
+  "name": "GamRemit — Fast Cross-Border Transfers",
+  "short_name": "GamRemit",
+  "description": "Send money across Gambia, Nigeria, and beyond in seconds — powered by USDC on Arc.",
+  "start_url": "/app.html",
+  "id": "/app.html",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "background_color": "#07090F",
+  "theme_color": "#07090F",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["finance", "business"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Send Money",
+      "short_name": "Send",
+      "description": "Send a new transfer",
+      "url": "/app.html#send",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Receive Money",
+      "short_name": "Receive",
+      "description": "Show your balance address / QR code",
+      "url": "/app.html#wallet",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Activity",
+      "short_name": "Activity",
+      "description": "View your transaction history",
+      "url": "/app.html#history",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

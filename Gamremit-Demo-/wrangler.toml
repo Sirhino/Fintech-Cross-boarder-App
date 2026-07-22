@@ -1,0 +1,73 @@
+name = "gamremitagent"
+pages_build_output_dir = "."
+compatibility_date = "2026-06-01"
+compatibility_flags = ["nodejs_compat"]
+
+# ── KV Namespace binding — now used ONLY for short-lived TTL caches ──
+# (OTP codes, Circle JWK cache, Blockradar asset cache, withdrawal quotes).
+# All persistent business data (users, transactions, KYC, etc.) moved to D1
+# below, since KV's free tier caps writes/list() at 1,000/day each — D1's
+# free tier allows 100,000 writes/day and 5,000,000 reads/day with no
+# separate list() limit at all.
+[[kv_namespaces]]
+binding = "GAMREMIT_KV"
+id = "7a1b9474d8994924949ccd846264edc2"
+
+# ── D1 Database binding ───────────────────────────────────────────────
+# Replace database_id below with your real D1 database's ID after creating
+# it with:
+#   npx wrangler d1 create gamremit-db
+# Then apply the schema with:
+#   npx wrangler d1 execute gamremit-db --remote --file=./schema.sql
+[[d1_databases]]
+binding = "DB"
+database_name = "gamremit-db"
+database_id = "9e35c228-b03b-46c8-a445-91c6876d4843"
+
+# ── Non-secret vars (safe to keep in this file / commit if not sensitive) ──
+[vars]
+EMAIL_FROM = "gamremit.arc@gmail.com"
+EMAIL_FROM_NAME = "GamRemit"
+USDC_ADDRESS = ""
+MOBILE_MONEY_NUMBER = ""
+BANK_ACCOUNT_NUMBER = ""
+
+# ── SECRETS ──────────────────────────────────────────────────────────────
+# Do NOT put real secret values in this file. Instead, after your first
+# `wrangler pages deploy`, set each one with:
+#
+#   npx wrangler pages secret put JWT_SECRET --project-name=gamremitagent
+#   npx wrangler pages secret put BREVO_API_KEY --project-name=gamremitagent
+#   npx wrangler pages secret put MAILJET_API_KEY --project-name=gamremitagent
+#   npx wrangler pages secret put MAILJET_API_SECRET --project-name=gamremitagent
+#   npx wrangler pages secret put ADMIN_PASSWORD --project-name=gamremitagent
+#   npx wrangler pages secret put CIRCLE_APP_ID --project-name=gamremitagent
+#   npx wrangler pages secret put CIRCLE_ENTITY_SECRET --project-name=gamremitagent
+#   npx wrangler pages secret put CIRCLE_USER_API_KEY --project-name=gamremitagent
+#   npx wrangler pages secret put CIRCLE_WALLET_SET_ID --project-name=gamremitagent
+#   npx wrangler pages secret put BLOCKRADAR_API_KEY --project-name=gamremitagent
+#   npx wrangler pages secret put BLOCKRADAR_WALLET_ID --project-name=gamremitagent
+#   npx wrangler pages secret put BLOCKRADAR_DEPOSIT_ADDRESS --project-name=gamremitagent
+#   npx wrangler pages secret put GROQ_API_KEY --project-name=gamremitagent
+#   npx wrangler pages secret put TELEGRAM_BOT_TOKEN --project-name=gamremitagent
+#   npx wrangler pages secret put TELEGRAM_CHAT_ID --project-name=gamremitagent
+#
+# ── CCTP BRIDGE RELAYER WALLET ────────────────────────────────────────────
+# The real bridge (functions/api/bridge/execute.js + bridge/status/[id].js)
+# needs ONE Circle developer wallet per destination chain, pre-funded with
+# that chain's native gas token, to submit the final "mint" step on behalf
+# of every user (receiveMessage() is permissionless — anyone can call it,
+# the funds always go to the address baked into the original burn message,
+# so one shared relayer wallet safely covers all users on that chain).
+#
+# To set up Ethereum Sepolia (the only destination currently wired up):
+#   1. Create a Circle developer wallet with blockchain: "ETH-SEPOLIA"
+#      (same pattern as your existing Arc Testnet wallet creation code)
+#   2. Fund it with Sepolia ETH from a faucet, e.g. https://sepoliafaucet.com
+#   3. Set its walletId here:
+#        npx wrangler pages secret put RELAYER_WALLET_ID_ETHEREUM_SEPOLIA --project-name=gamremitagent
+#
+# Without this secret set, bridging to Ethereum Sepolia will fail with a
+# clear "not configured" error instead of crashing — safe, but won't work
+# until you complete this one-time setup.
+
