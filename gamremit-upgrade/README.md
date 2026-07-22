@@ -39,7 +39,7 @@ Run these one by one:
 
 ```bash
 wrangler secret put UPSTASH_REDIS_REST_URL
-# paste: https://loving-gnu-104251.upstash.io
+# paste: https:
 
 wrangler secret put UPSTASH_REDIS_REST_TOKEN
 # paste: your token from Upstash dashboard
