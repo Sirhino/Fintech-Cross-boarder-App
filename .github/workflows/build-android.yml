@@ -1,0 +1,105 @@
+name: Build GamRemit Android Debug APK
+
+# Builds a signed DEBUG APK of the GamRemit native shell (Capacitor,
+# pointed at the live gamremit.xyz site) and publishes it as a GitHub
+# Release asset, which is what /download.html links to.
+#
+# Runs on GitHub's hosted runners because they have full internet access
+# (Google's Maven repo, Gradle's distribution servers) that a sandboxed
+# dev environment typically doesn't. This is the actual build step —
+# everything else in this repo (keystore, Gradle config, Capacitor
+# config) was already prepared; this workflow just needs to run once,
+# triggered by a push or manually, to produce the real .apk file.
+#
+# ── ONE-TIME SETUP REQUIRED BEFORE THIS WILL WORK ──────────────────
+# This workflow signs the APK using secrets, NOT the keystore file
+# committed in this repo (committing a real signing key to source
+# control is bad practice even for a testnet build). Add these under
+# Settings → Secrets and variables → Actions → New repository secret:
+#
+#   GAMREMIT_DEBUG_KEYSTORE_BASE64   → run: base64 -w0 android/gamremit-debug.keystore
+#                                       and paste the output
+#   GAMREMIT_DEBUG_KEYSTORE_PASSWORD → gamremit-testnet-debug (or your own if you regenerate it)
+#   GAMREMIT_DEBUG_KEY_ALIAS         → gamremit-debug
+#   GAMREMIT_DEBUG_KEY_PASSWORD      → gamremit-testnet-debug (or your own if you regenerate it)
+#
+# Once those four secrets exist, push to main (or run this workflow
+# manually from the Actions tab) and it will build, sign, and publish
+# the APK automatically.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - 'capacitor.config.json'
+      - 'package.json'
+      - '.github/workflows/build-android.yml'
+  workflow_dispatch: {} # lets you trigger a build manually from the Actions tab
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Restore the signing keystore from secrets
+        run: |
+          echo "${{ secrets.GAMREMIT_DEBUG_KEYSTORE_BASE64 }}" | base64 -d > android/gamremit-debug.keystore
+
+      - name: Sync Capacitor (copies config into the native project)
+        run: npx cap sync android
+
+      - name: Grant execute permission to gradlew
+        run: chmod +x android/gradlew
+
+      - name: Build signed debug APK
+        working-directory: android
+        env:
+          GAMREMIT_DEBUG_KEYSTORE_PATH: ../gamremit-debug.keystore
+          GAMREMIT_DEBUG_KEYSTORE_PASSWORD: ${{ secrets.GAMREMIT_DEBUG_KEYSTORE_PASSWORD }}
+          GAMREMIT_DEBUG_KEY_ALIAS: ${{ secrets.GAMREMIT_DEBUG_KEY_ALIAS }}
+          GAMREMIT_DEBUG_KEY_PASSWORD: ${{ secrets.GAMREMIT_DEBUG_KEY_PASSWORD }}
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Rename APK for a clean download filename
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk gamremit-testnet.apk
+
+      - name: Upload as a workflow artifact (always, for every run)
+        uses: actions/upload-artifact@v4
+        with:
+          name: gamremit-testnet-apk
+          path: gamremit-testnet.apk
+          retention-days: 90
+
+      - name: Publish/update the "latest-testnet" GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest-testnet
+          name: GamRemit Testnet (latest debug build)
+          body: |
+            Auto-built from commit ${{ github.sha }}.
+            This is a DEBUG build for testnet use only — signed with the
+            project's debug keystore, not a Play Store release key.
+          files: gamremit-testnet.apk
+          # Re-publishing to the same tag keeps one stable download URL
+          # (…/releases/download/latest-testnet/gamremit-testnet.apk)
+          # that /download.html can always link to, rather than a new
+          # URL per build.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
