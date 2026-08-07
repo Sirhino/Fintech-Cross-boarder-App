@@ -10,11 +10,11 @@
   "android": {
     "allowMixedContent": false,
     "captureInput": true,
-    "webContentsDebuggingEnabled": true
+    "webContentsDebuggingEnabled": false
   },
   "ios": {
     "contentInset": "automatic",
-    "webContentsDebuggingEnabled": true
+    "webContentsDebuggingEnabled": false
   },
   "plugins": {
     "SplashScreen": {
@@ -26,6 +26,11 @@
     "StatusBar": {
       "style": "DARK",
       "backgroundColor": "#07090F"
+    },
+    "CapacitorPasskey": {
+      "origin": "https://gamremit.xyz",
+      "domains": ["gamremit.xyz"],
+      "autoShim": true
     }
   }
 }
